@@ -13,8 +13,8 @@ use_condaenv(condaenv="scanpy-p3.9")
 
 umap = import('umap')
 
-path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_filtered/'
-sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/sample_info.tab',
+path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_unfiltered/'
+sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
   
 #read the spare matrix into counts
@@ -31,35 +31,67 @@ dim(counts)
 dim(counts[,ngenes > 500])
 #[1] 62703 52719
 
+#create a vector with nrow(metadata) many NAs for smaple_bc1_well, smaple_nuber and smaple_name_human/mouse 
 sample_bc1_well <- rep(NA, nrow(metadata))        
 sample_number   <- rep(NA, nrow(metadata))
-sample_name     <- rep(NA, nrow(metadata))
+sample_name_human     <- rep(NA, nrow(metadata))
+sample_name_mouse     <- rep(NA, nrow(metadata))
 
+#creating avector withinformation of which well the cell is in which well
 samples <- unique(sample_info$Sample_well)
 for (i in 1:length(samples)){
   sample_bc1_well[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))] <- sample_info$Sample_well[i]
   sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]   <- sample_info$Sample_number[i]
-  sample_name[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name[i]
+  sample_name_human[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_H[i]
+  sample_name_mouse[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_M[i]
 }
-sample_name <- gsub(" ","_",sample_name)
+sample_name_human <- gsub(" ","_",sample_name_human)
+sample_name_mouse <- gsub(" ","_",sample_name_mouse)
 
-submeta <- data.frame(rlist::list.rbind(strsplit(sample_name, split="_")))
-colnames(submeta) <- c("batch", "day", "replicate")
-submeta$day <- gsub("d","",submeta$day)
+#changing the sample_infro.tab for Feline's data 
+sample_info$H_day <- gsub("55\\+","",sample_info$H_day)
+sample_info$H_day <- as.integer(sample_info$H_day)
+sample_info$H_day <-  sample_info$H_day +55
+sample_info$Sample_name_H <- paste(sample_info$H_Batch, sample_info$H_day, sample_info$H_Replicate, sep="_")
 
-metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name, submeta))
+sample_info$M_day <- gsub("8\\+","",sample_info$M_day)
+sample_info$M_day <- as.integer(sample_info$M_day)
+sample_info$M_day <-  sample_info$H_day +8
+sample_info$Sample_name_M <- paste(sample_info$M_Batch, sample_info$M_day, sample_info$M_Replicate, sep="_")
+
+#creating submeta columns for human and mouse samples 
+submeta_human <- data.frame(rlist::list.rbind(strsplit(sample_name_human, split="_")))
+colnames(submeta_human) <- c("batch", "day", "replicate")
+submeta_human$day <- gsub("d","",submeta_human$day)
+
+submeta_mouse <- data.frame(rlist::list.rbind(strsplit(sample_name_mouse, split="_")))
+colnames(submeta_mouse) <- c("batch", "day", "replicate")
+submeta_mouse$day <- gsub("d","",submeta_mouse$day)
+
+#adding new columns to metadata
+metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name_human, submeta_human, sample_name_mouse, submeta_mouse))
 
 plot_df <- metadata
 
-setwd('/data1/ivanir/Ilaria2023/ParseBS/newvolume/analysis/sCell/QC')
+setwd('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/QC')
 
-ggplot(plot_df, aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
+#visualising metadata for human sample 
+ggplot(plot_df, aes (x = factor(sample_name_human), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
   scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
     labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
-ggsave("UMIsBySample_beforeQC.pdf")
+ggsave("UMIsBySample_beforeQC_H.pdf")
+
+#visualising metadata for mouse sample 
+ggplot(plot_df, aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes))) +
+  geom_boxplot() +
+  theme_bw() +  coord_flip() +
+  labs(x = "Batch", y = "Number of UMIs") +
+  scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
+    labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
+ggsave("UMIsBySample_beforeQC_M.pdf")
  
 pdf("cell_complexity.pdf")
 qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
