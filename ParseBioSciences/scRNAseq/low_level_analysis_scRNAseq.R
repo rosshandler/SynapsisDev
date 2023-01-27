@@ -1,11 +1,14 @@
+library(scuttle)
 library(scran)
 library(irlba)
 library(Rtsne)
 library(Matrix)
 library(ggplot2)
 library(biomaRt)
+library(viridisLite)
 library(viridis)
 library(scDblFinder)
+
 
 library(umap)
 library(reticulate)
@@ -13,8 +16,8 @@ use_condaenv(condaenv="scanpy-p3.9")
 
 umap = import('umap')
 
-path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_filtered/'
-sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/sample_info.tab',
+path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_unfiltered/'
+sample_info <- read.table('/data2/hanna/synaptogenesis/newvolume/analysis/sample_info_alt.tab',
   sep = "\t", header = TRUE)
 
 counts    <- t(readMM(paste0(path2data, "DGE.mtx")))
@@ -25,39 +28,52 @@ lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
 dim(counts)
-#[1]  62703 426237
+#[1] 112627 381176
 dim(counts[,ngenes > 500])
-#[1] 62703 52719
+#[1] 112627  16073
 
-sample_bc1_well <- rep(NA, nrow(metadata))        
-sample_number   <- rep(NA, nrow(metadata))
-sample_name     <- rep(NA, nrow(metadata))
+sample_bc1_well     <- rep(NA, nrow(metadata))        
+sample_number       <- rep(NA, nrow(metadata))
+sample_name_human   <- rep(NA, nrow(metadata))
+sample_name_mouse   <- rep(NA, nrow(metadata))
 
 samples <- unique(sample_info$Sample_well)
 for (i in 1:length(samples)){
-  sample_bc1_well[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))] <- sample_info$Sample_well[i]
-  sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]   <- sample_info$Sample_number[i]
-  sample_name[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name[i]
+  sample_bc1_well[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]    <- sample_info$Sample_well[i]
+  sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]      <- sample_info$Sample_Number[i]
+  sample_name_human[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]  <- sample_info$Sample_name_H[i]
+  sample_name_mouse[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]  <- sample_info$Sample_name_M[i]
 }
-sample_name <- gsub(" ","_",sample_name)
+sample_name_human <- gsub(" ","_",sample_name_human)
+sample_name_mouse <- gsub(" ","_",sample_name_mouse)
 
-submeta <- data.frame(rlist::list.rbind(strsplit(sample_name, split="_")))
-colnames(submeta) <- c("batch", "day", "replicate")
-submeta$day <- gsub("d","",submeta$day)
+submeta_human <- data.frame(rlist::list.rbind(strsplit(sample_name_human, split="_")))
+colnames(submeta_human) <- c("batch", "day", "replicate")
 
-metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name, submeta))
+submeta_mouse <- data.frame(rlist::list.rbind(strsplit(sample_name_mouse, split="_")))
+colnames(submeta_mouse) <- c("batch", "day", "replicate")
+
+metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name_human, submeta_human, sample_name_mouse, submeta_mouse))
 
 plot_df <- metadata
 
-setwd('/data1/ivanir/Ilaria2023/ParseBS/newvolume/analysis/sCell/QC')
+setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC')
 
-ggplot(plot_df, aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
+ggplot(plot_df, aes (x = factor(sample_name_human), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
   scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
     labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
-ggsave("UMIsBySample_beforeQC.pdf")
+ggsave("/data2/hanna/synaptogenesis/newvolume/analysis/UMIsBySample_beforeQC_H.pdf")
+
+ggplot(plot_df, aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes))) +
+  geom_boxplot() +
+  theme_bw() +  coord_flip() +
+  labs(x = "Batch", y = "Number of UMIs") +
+  scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
+    labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
+ggsave("/data2/hanna/synaptogenesis/newvolume/analysis/UMIsBySample_beforeQC_M.pdf")
  
 pdf("cell_complexity.pdf")
 qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
