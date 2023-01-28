@@ -57,8 +57,6 @@ metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well
 
 plot_df <- metadata
 
-setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC')
-
 ggplot(plot_df, aes (x = factor(sample_name_human), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
@@ -76,7 +74,7 @@ ggplot(plot_df, aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes))) 
 ggsave("/data2/hanna/synaptogenesis/newvolume/analysis/UMIsBySample_beforeQC_M.pdf")
  
 pdf("cell_complexity.pdf")
-qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
+ggp <- qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
   scale_x_log10() +
   scale_y_log10() +
   theme_minimal() + 
@@ -84,6 +82,7 @@ qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
   labs(x = "UMI count", y = "Number of expressed genes") +
   scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
 dev.off()
+print(ggp)
 
 dim(counts[,ngenes > 500])
 #[1] 62703 52719
@@ -93,70 +92,113 @@ metadata <- metadata[ngenes > 500,]
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
-ensembl <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror="useast")
+ensembl_human <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror="useast")
+ensemble_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror="useast")
 
-gene_map  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
-  filters = "hgnc_symbol", values = genes$gene_name, mart = ensembl)
+gene_map_H  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
+  filters = "hgnc_symbol", values = genes$gene_name, mart = ensembl_human)
+gene_map_M  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
+  filters = "hgnc_symbol", values = genes$gene_name, mart = ensembl_mouse)
 
-mt.index    <- gene_map$chromosome_name == "MT"
-mt.counts   <- counts[which(genes$gene_name %in% gene_map$hgnc_symbol[mt.index]), ]
-mt.fraction <- colSums(mt.counts)/lib.sizes
+mt.index_H    <- gene_map_H$chromosome_name == "MT"
+mt.counts_H   <- counts[which(genes$gene_name %in% gene_map_H$hgnc_symbol[mt.index_H]), ]
+mt.fraction_H <- colSums(mt.counts_H)/lib.sizes
 
-mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
-mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
+mt.p_H   <- pnorm(mt.fraction_H, mean = median(mt.fraction_H), sd = mad(mt.fraction_H), lower.tail = FALSE)
+mt.lim_H <- min(mt.fraction_H[which(p.adjust(mt.p_H, method = "fdr") < 0.05)])
+
+mt.index_M    <- gene_map_M$chromosome_name == "MT"
+mt.counts_M   <- counts[which(genes$gene_name %in% gene_map_M$hgnc_symbol[mt.index_M]), ]
+mt.fraction_M <- colSums(mt.counts_M)/lib.sizes
+
+mt.p_M   <- pnorm(mt.fraction_M, mean = median(mt.fraction_M), sd = mad(mt.fraction_M), lower.tail = FALSE)
+mt.lim_M <- min(mt.fraction_M[which(p.adjust(mt.p_M, method = "fdr") < 0.05)])
 
 #Threhdold
-mt.lim
+mt.lim_H
+mt.lim_M
 #[1] 0.08196721
 
-mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
+mt.lim_H <- min(mt.fraction_H[which(p.adjust(mt.p_H, method = "fdr") < 0.001)])
+mt.lim_M <- min(mt.fraction_M[which(p.adjust(mt.p_M, method = "fdr") < 0.001)])
 
 #Threhdold
-mt.lim
+mt.lim_H
+mt.lim_M
 #[1] 0.1046875
 
-metadata <- data.frame(cbind(metadata,mt.fraction))
+metadata <- data.frame(cbind(metadata,mt.fraction_H))
+metadata <- data.frame(cbind(metadata,mt.fraction_M))
 
-pdf("mtreadfraction1.pdf")
-qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
+pdf("H_mtreadfraction1.pdf")
+hplot <- qplot(lib.sizes, mt.fraction_H, col = ifelse(mt.fraction_H>mt.lim_H, "drop", "keep")) +
   scale_x_log10() +
   labs(x = "UMI count", y = "MT read fraction") +
   theme_minimal() + 
   theme(text = element_text(size=20),legend.position = "none")  +
   scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
 dev.off()
+print(hplot)
 
-dim(counts[,mt.fraction < mt.lim])
-#[1] 62703 51910
+pdf("M_mtreadfraction1.pdf")
+mplot <- qplot(lib.sizes, mt.fraction_M, col = ifelse(mt.fraction_M>mt.lim_M, "drop", "keep")) +
+  scale_x_log10() +
+  labs(x = "UMI count", y = "MT read fraction") +
+  theme_minimal() + 
+  theme(text = element_text(size=20),legend.position = "none")  +
+  scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
+dev.off()
+print(mplot)
 
-dim(counts[,mt.fraction < 0.2])
-#[1] 62703 14284
+dim(counts[,mt.fraction_H < mt.lim_H])
+#[1] 112627  15897
+dim(counts[,mt.fraction_M < mt.lim_M])
+#[1] 112627      0
+
+dim(counts[,mt.fraction_H < 0.2])
+#[1] 112627  16069
+dim(counts[,mt.fraction_M < 0.2])
+#[1] 112627  16073
 
 mtlim <- 0.2
 
-sce <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),
-  colData=DataFrame(metadata[mt.fraction < mt.lim,]))
-rownames(sce) <- genes$gene_id
+sce_human <- SingleCellExperiment(list(counts=counts[,mt.fraction_H < mt.lim_H]),
+  colData=DataFrame(metadata[mt.fraction_H < mt.lim_H,]))
+rownames(sce_human) <- genes$gene_id
+sce_mouse <- SingleCellExperiment(list(counts=counts[,mt.fraction_M < mt.lim_M]),
+  colData=DataFrame(metadata[mt.fraction_M < mt.lim_M,]))
+rownames(sce_mouse) <- genes$gene_id
 
-rownames(genes) <- rownames(sce)
-rowData(sce) <- DataFrame(genes)
+rownames(genes) <- rownames(sce_human)
+rowData(sce_human) <- DataFrame(genes)
+rownames(genes) <- rownames(sce_mouse)
+rowData(sce_mouse) <- DataFrame(genes)
 
-colnames(sce) <- metadata$bc_wells[mt.fraction  < mt.lim]
-colData(sce)  <- DataFrame(metadata[mt.fraction < mt.lim,])
+colnames(sce_human) <- metadata$bc_wells[mt.fraction_H  < mt.lim_H]
+colData(sce_human)  <- DataFrame(metadata[mt.fraction_H < mt.lim_H,])
+colnames(sce_mouse) <- metadata$bc_wells[mt.fraction_M  < mt.lim_M]
+colData(sce_mouse)  <- DataFrame(metadata[mt.fraction_M < mt.lim_M,])
 
-lib.sizes <- colSums(counts(sce))
-sce_filt  <- sce[calculateAverage(sce)>0.05,]
+lib.sizes_human <- colSums(counts(sce_human))
+sce_filt_human  <- sce_human[calculateAverage(sce_human)>0.05,]
+lib.sizes_mouse <- colSums(counts(sce_mouse))
+sce_filt_mouse  <- sce_mouse[calculateAverage(sce_mouse)>0.05,]
 
-clusts <- as.numeric(quickCluster(sce_filt, method = "igraph", min.size = 100))
+clusts_human <- as.numeric(quickCluster(sce_filt_human, method = "igraph", min.size = 100))
+clusts_mouse <- as.numeric(quickCluster(sce_filt_mouse, method = "igraph", min.size = 100))
 
-min.clust <- min(table(clusts))/2
-new_sizes <- c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
-sce_filt <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
+min.clust_human <- min(table(clusts_human))/2
+new_sizes_human <- c(floor(min.clust_human/3), floor(min.clust_human/2), floor(min.clust_human))
+sce_filt_human <- computeSumFactors(sce_filt_human, clusters = clusts_human, sizes = new_sizes_human, max.cluster.size = 3000)
+min.clust_mouse <- min(table(clusts_mouse))/2
+new_sizes_mouse <- c(floor(min.clust_mouse/3), floor(min.clust_mouse/2), floor(min.clust_mouse))
+sce_filt_mouse <- computeSumFactors(sce_filt_mouse, clusters = clusts_mouse, sizes = new_sizes_mouse, max.cluster.size = 3000)
 
-sizeFactors(sce) <- sizeFactors(sce_filt)
+sizeFactors(sce_human) <- sizeFactors(sce_filt_human)
+sizeFactors(sce_mouse) <- sizeFactors(sce_filt_mouse)
 
-pdf("sizefactors.pdf")
-ggplot(data = data.frame(X = lib.sizes, Y = sizeFactors(sce)), mapping = aes(x = X, y = Y)) +
+pdf("sizefactors_H.pdf")
+ggplot(data = data.frame(X = lib.sizes_human, Y = sizeFactors(sce_human)), mapping = aes(x = X, y = Y)) +
   geom_point() +
   scale_x_log10(breaks = c(500, 2000, 5000, 10000, 30000), labels = c("5,00", "2,000", "5,000", "10,000", "30,000") ) +
   scale_y_log10(breaks = c(0.2, 1, 5)) +
@@ -165,34 +207,71 @@ ggplot(data = data.frame(X = lib.sizes, Y = sizeFactors(sce)), mapping = aes(x =
   labs(x = "Number of UMIs", y = "Size Factor")
 dev.off()
 
-ggplot(data.frame(colData(sce)), aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
+pdf("sizefactors_M.pdf")
+ggplot(data = data.frame(X = lib.sizes_mouse, Y = sizeFactors(sce_mouse)), mapping = aes(x = X, y = Y)) +
+  geom_point() +
+  scale_x_log10(breaks = c(500, 2000, 5000, 10000, 30000), labels = c("5,00", "2,000", "5,000", "10,000", "30,000") ) +
+  scale_y_log10(breaks = c(0.2, 1, 5)) +
+  theme_minimal() +
+  theme(text = element_text(size=20))  +
+  labs(x = "Number of UMIs", y = "Size Factor")
+dev.off()
+
+plot <- ggplot(data.frame(colData(sce_human)), aes (x = factor(sample_name_human), y = as.numeric(lib.sizes_human))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
   scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
     labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
-ggsave("UMIsBySample_afterQC.pdf")
+print(plot)
+ggsave("UMIsBySample_afterQC_H.pdf")
+
+ggplot(data.frame(colData(sce_mouse)), aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes_mouse))) +
+  geom_boxplot() +
+  theme_bw() +  coord_flip() +
+  labs(x = "Batch", y = "Number of UMIs") +
+  scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
+    labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
+ggsave("UMIsBySample_afterQC_M.pdf")
 
 
 library(BiocParallel)
 
 bp <- MulticoreParam(12, RNGseed=1234)
 bpstart(bp)
-sce <- scDblFinder(sce, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
+sce_human <- scDblFinder(sce_human, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
-table(sce$scDblFinder.class)
+table(sce_human$scDblFinder.class)
 #singlet doublet 
 #  49995    1915
 
-sce_filt <- sce[calculateAverage(sce)>0.05,]
+bp <- MulticoreParam(12, RNGseed=1234)
+bpstart(bp)
+sce_mouse <- scDblFinder(sce_mouse, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
+bpstop(bp)
+table(sce_mouse$scDblFinder.class)
+#singlet doublet 
+#  49995    1915
 
-sce_filt <- logNormCounts(sce_filt)
+sce_filt_human <- sce_human[calculateAverage(sce_human)>0.05,]
+sce_filt_mouse <- sce_mouse[calculateAverage(sce_mouse)>0.05,]
 
-decomp  <- modelGeneVar(sce_filt)
-hvgs    <- rownames(decomp)[decomp$FDR < 0.5]
-pca     <- prcomp_irlba(t(logcounts(sce_filt[hvgs,])), n = 30)
-rownames(pca$x) <- colnames(sce_filt)
-tsne <- Rtsne(pca$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
+
+sce_filt_human <- logNormCounts(sce_filt_human)
+sce_filt_mouse <- logNormCounts(sce_filt_mouse)
+
+
+decomp_human  <- modelGeneVar(sce_filt_human)
+hvgs_human    <- rownames(decomp_human)[decomp_human$FDR < 0.5]
+pca_human     <- prcomp_irlba(t(logcounts(sce_filt_human[hvgs_human,])), n = 30)
+rownames(pca_human$x) <- colnames(sce_filt_human)
+tsne <- Rtsne(pca_human$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
+
+decomp_mouse  <- modelGeneVar(sce_filt_mouse)
+hvgs_mouse    <- rownames(decomp_mouse)[decomp_mouse$FDR < 0.5]
+pca_mouse     <- prcomp_irlba(t(logcounts(sce_filt_mouse[hvgs_mouse,])), n = 30)
+rownames(pca_mouse$x) <- colnames(sce_filt_mouse)
+tsne <- Rtsne(pca_mouse$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
 
 ######################################################################
 layout  <- umap(pca$x, method="umap-learn", umap_learn_args=c("n_neighbors", "n_epochs", "min_dist"), n_neighbors=30, min_dist=.25)
