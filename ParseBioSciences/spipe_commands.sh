@@ -41,6 +41,24 @@ split-pipe \
 --output_dir $PBS/newvolume/genomes/hg38_mm10
 
 cd $PBS/newvolume/expdata/
+
+./demultiplexer.rhel/demuxFQ \
+    -c -d -i -e -t 0 -r 0.01 \
+    -o ../correctFastq \
+    -b SLX-22602.lostreads.r_1.fq.gz \
+    -s SLX-22602.demultiplexsummary.txt \
+    SLX-22602.r_1.index.txt \
+    SLX-22602.s_1.r_1.fq.gz
+
+./demultiplexer.rhel/demuxFQ \
+    -c -d -i -e -t 0 -r 0.01 \
+    -o ../correctFastq2 \
+    -b SLX-22602.lostreads.r_2.fq.gz \
+    -s SLX-22602.demultiplexsummary.txt \
+    SLX-22602.r_2.index.txt \
+    SLX-22602.s_1.r_2.fq.gz
+
+
 cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_1.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_1.fq.gz > SLX-22602.r_1.fq.gz
 cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_2.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_2.fq.gz > SLX-22602.r_2.fq.gz
 
