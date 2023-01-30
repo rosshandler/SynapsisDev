@@ -93,12 +93,12 @@ lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
 ensembl_human <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror="useast")
-ensemble_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror="useast")
+ensembl_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror="useast")
 
 gene_map_H  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
   filters = "hgnc_symbol", values = genes$gene_name, mart = ensembl_human)
-gene_map_M  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
-  filters = "hgnc_symbol", values = genes$gene_name, mart = ensembl_mouse)
+gene_map_M  <- getBM(attributes=c("ensembl_gene_id", "mgi_symbol", "chromosome_name"),
+  filters = "mgi_symbol", values = genes$gene_name, mart = ensembl_mouse)
 
 mt.index_H    <- gene_map_H$chromosome_name == "MT"
 mt.counts_H   <- counts[which(genes$gene_name %in% gene_map_H$hgnc_symbol[mt.index_H]), ]
@@ -108,7 +108,7 @@ mt.p_H   <- pnorm(mt.fraction_H, mean = median(mt.fraction_H), sd = mad(mt.fract
 mt.lim_H <- min(mt.fraction_H[which(p.adjust(mt.p_H, method = "fdr") < 0.05)])
 
 mt.index_M    <- gene_map_M$chromosome_name == "MT"
-mt.counts_M   <- counts[which(genes$gene_name %in% gene_map_M$hgnc_symbol[mt.index_M]), ]
+mt.counts_M   <- counts[which(genes$gene_name %in% gene_map_M$mgi_symbol[mt.index_M]), ]
 mt.fraction_M <- colSums(mt.counts_M)/lib.sizes
 
 mt.p_M   <- pnorm(mt.fraction_M, mean = median(mt.fraction_M), sd = mad(mt.fraction_M), lower.tail = FALSE)
@@ -217,13 +217,12 @@ ggplot(data = data.frame(X = lib.sizes_mouse, Y = sizeFactors(sce_mouse)), mappi
   labs(x = "Number of UMIs", y = "Size Factor")
 dev.off()
 
-plot <- ggplot(data.frame(colData(sce_human)), aes (x = factor(sample_name_human), y = as.numeric(lib.sizes_human))) +
+ggplot(data.frame(colData(sce_human)), aes (x = factor(sample_name_human), y = as.numeric(lib.sizes_human))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
   scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
     labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
-print(plot)
 ggsave("UMIsBySample_afterQC_H.pdf")
 
 ggplot(data.frame(colData(sce_mouse)), aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes_mouse))) +
@@ -236,14 +235,13 @@ ggsave("UMIsBySample_afterQC_M.pdf")
 
 
 library(BiocParallel)
-
 bp <- MulticoreParam(12, RNGseed=1234)
 bpstart(bp)
 sce_human <- scDblFinder(sce_human, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce_human$scDblFinder.class)
 #singlet doublet 
-#  49995    1915
+# 15445     817 
 
 bp <- MulticoreParam(12, RNGseed=1234)
 bpstart(bp)
@@ -256,10 +254,8 @@ table(sce_mouse$scDblFinder.class)
 sce_filt_human <- sce_human[calculateAverage(sce_human)>0.05,]
 sce_filt_mouse <- sce_mouse[calculateAverage(sce_mouse)>0.05,]
 
-
 sce_filt_human <- logNormCounts(sce_filt_human)
 sce_filt_mouse <- logNormCounts(sce_filt_mouse)
-
 
 decomp_human  <- modelGeneVar(sce_filt_human)
 hvgs_human    <- rownames(decomp_human)[decomp_human$FDR < 0.5]
