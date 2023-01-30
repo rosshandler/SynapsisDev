@@ -104,6 +104,11 @@ ggp <- qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
 dev.off()
 print(ggp)
 
+### if problems with null device 1 effor: 
+while (!is.null(dev.list()))  dev.off()
+dev.set(dev.next()) #x3ish 
+dev.set(dev.prev())
+
 dim(counts[,ngenes > 500])
 #[1] 62703 52719
 
@@ -268,6 +273,7 @@ library(BiocParallel)
 
 bp <- MulticoreParam(12, RNGseed=1234)
 bpstart(bp)
+#detection and evaluation of doublets/multiplets
 sce_human <- scDblFinder(sce_human, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce_human$scDblFinder.class)
@@ -282,13 +288,12 @@ table(sce_mouse$scDblFinder.class)
 #singlet doublet 
 #  49995    1915
 
+#normalisation
 sce_filt_human <- sce_human[calculateAverage(sce_human)>0.05,]
 sce_filt_mouse <- sce_mouse[calculateAverage(sce_mouse)>0.05,]
 
-
 sce_filt_human <- logNormCounts(sce_filt_human)
 sce_filt_mouse <- logNormCounts(sce_filt_mouse)
-
 
 decomp_human  <- modelGeneVar(sce_filt_human)
 hvgs_human    <- rownames(decomp_human)[decomp_human$FDR < 0.5]
