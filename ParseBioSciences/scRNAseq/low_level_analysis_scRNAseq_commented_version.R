@@ -1,9 +1,11 @@
+library(scuttle)
 library(scran)
 library(irlba)
 library(Rtsne)
 library(Matrix)
 library(ggplot2)
 library(biomaRt)
+library(viridisLite)
 library(viridis)
 library(scDblFinder)
 
@@ -14,7 +16,7 @@ use_condaenv(condaenv="scanpy-p3.9")
 umap = import('umap')
 
 path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_unfiltered/'
-sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
+sample_info <- read.table('/data2/hanna/synaptogenesis/newvolume/analysis/sample_info_alt.tab',
   sep = "\t", header = TRUE)
   
 #read the spare matrix into counts
@@ -25,6 +27,9 @@ metadata  <- read.csv(paste0(path2data, "cell_metadata.csv"))
 
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
+
+genes_human <- genes[genes$genome == "hg38",]
+genes_mouse <- genes[genes$genome == "mm10",]
 
 dim(counts)
 #[1]  62703 426237
