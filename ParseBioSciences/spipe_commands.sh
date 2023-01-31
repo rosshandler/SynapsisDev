@@ -44,15 +44,15 @@ cd $PBS/newvolume/expdata/
 
 ./demultiplexer.rhel/demuxFQ \
     -c -d -i -e -t 0 -r 0.01 \
-    -o ../correctFastq \
+    -o ../correctFastq_s1_r1 \
     -b SLX-22602.lostreads.r_1.fq.gz \
-    -s SLX-22602.demultiplexsummary.txt \
+    -s SLX-22602.demultiplexsummary_s1_r1.txt \
     SLX-22602.r_1.index.txt \
     SLX-22602.s_1.r_1.fq.gz
 
 ./demultiplexer.rhel/demuxFQ \
     -c -d -i -e -t 0 -r 0.01 \
-    -o ../correctFastq2 \
+    -o ../correctFastq_s1_r2 \
     -b SLX-22602.lostreads.r_2.fq.gz \
     -s SLX-22602.demultiplexsummary.txt \
     SLX-22602.r_2.index.txt \
