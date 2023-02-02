@@ -64,7 +64,19 @@ cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_2.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_
 
 # Pipeline running
 #single cell
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
+split-pipe --mode all --tscp_use 500 --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
+--fq1 $PBS/newvolume/expdata/SLX-22602.r_1.fq.gz \
+--fq2 $PBS/newvolume/expdata/SLX-22602.r_2.fq.gz \
+--output_dir $PBS/newvolume/analysis/sCell
+
+
+split-pipe --mode mol --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
+--fq1 $PBS/newvolume/expdata/SLX-22602.r_1.fq.gz \
+--fq2 $PBS/newvolume/expdata/SLX-22602.r_2.fq.gz \
+--output_dir $PBS/newvolume/analysis/sCell
+
+
+split-pipe --mode dge --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
 --fq1 $PBS/newvolume/expdata/SLX-22602.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/SLX-22602.r_2.fq.gz \
 --output_dir $PBS/newvolume/analysis/sCell
