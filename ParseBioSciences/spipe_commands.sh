@@ -42,41 +42,36 @@ split-pipe \
 
 cd $PBS/newvolume/expdata/
 
-./demultiplexer.rhel/demuxFQ \
-    -c -d -i -e -t 0 -r 0.01 \
-    -o ../correctFastq_s1_r1 \
+cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_1.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_1.fq.gz > SLX-22602.tmp.r_1.fq.gz
+cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_2.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_2.fq.gz > SLX-22602.tmp.r_2.fq.gz
+
+cat SLX-22602.HGMLNDMXY.s_2.r_1.lostreads.fq.gz SLX-22602.HGMLNDMXY.s_2.r_1.lostreads.fq.gz > SLX-22602.lostreads.tmp.r_1.fq.gz
+cat SLX-22602.HGMLNDMXY.s_2.r_1.lostreads.fq.gz SLX-22602.HGMLNDMXY.s_2.r_2.lostreads.fq.gz > SLX-22602.lostreads.tmp.r_2.fq.gz
+
+cat SLX-22602.tmp.r_1.fq.gz SLX-22602.lostreads.tmp.r_1.fq.gz > SLX-22602.r_1.fq.gz
+cat SLX-22602.tmp.r_2.fq.gz SLX-22602.lostreads.tmp.r_2.fq.gz > SLX-22602.r_2.fq.gz
+
+nohup ./demultiplexer.rhel/demuxFQ \
+    -c -d -e -i -t 1 -r 0.01 \
+    -o correctFastq \
     -b SLX-22602.lostreads.r_1.fq.gz \
-    -s SLX-22602.demultiplexsummary_s1_r1.txt \
+    -s SLX-22602.demultiplexsummary.r1.txt \
     SLX-22602.r_1.index.txt \
-    SLX-22602.s_1.r_1.fq.gz
-
-./demultiplexer.rhel/demuxFQ \
-    -c -d -i -e -t 0 -r 0.01 \
-    -o ../correctFastq_s1_r2 \
+    SLX-22602.r_1.fq.gz &
+    
+nohup ./demultiplexer.rhel/demuxFQ \
+    -c -d -i -e -t 1 -r 0.01 \
+    -o correctFastq \
     -b SLX-22602.lostreads.r_2.fq.gz \
-    -s SLX-22602.demultiplexsummary.txt \
+    -s SLX-22602.demultiplexsummary.r2.txt \
     SLX-22602.r_2.index.txt \
-    SLX-22602.s_1.r_2.fq.gz
-
-
-cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_1.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_1.fq.gz > SLX-22602.r_1.fq.gz
-cat SLX-22602.DNAA007.HGMLNDMXY.s_1.r_2.fq.gz SLX-22602.DNAA007.HGMLNDMXY.s_2.r_2.fq.gz > SLX-22602.r_2.fq.gz
-
+    SLX-22602.r_2.fq.gz &
+  
 # Pipeline running
 #single cell
-split-pipe --mode all --tscp_use 500 --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
---fq1 $PBS/newvolume/expdata/SLX-22602.r_1.fq.gz \
+split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
+--fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.ACTTGA.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/SLX-22602.r_2.fq.gz \
 --output_dir $PBS/newvolume/analysis/sCell
 
 
-split-pipe --mode mol --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
---fq1 $PBS/newvolume/expdata/SLX-22602.r_1.fq.gz \
---fq2 $PBS/newvolume/expdata/SLX-22602.r_2.fq.gz \
---output_dir $PBS/newvolume/analysis/sCell
-
-
-split-pipe --mode dge --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/hg38_mm10/ \
---fq1 $PBS/newvolume/expdata/SLX-22602.r_1.fq.gz \
---fq2 $PBS/newvolume/expdata/SLX-22602.r_2.fq.gz \
---output_dir $PBS/newvolume/analysis/sCell
