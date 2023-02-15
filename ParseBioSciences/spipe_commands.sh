@@ -66,6 +66,8 @@ nohup ./demultiplexer.rhel/demuxFQ \
     -s SLX-22602.demultiplexsummary.r2.txt \
     SLX-22602.r_2.index.txt \
     SLX-22602.r_2.fq.gz &
+    
+rm SLX-22602.r_1.fq.gz SLX-22602.r_2.fq.gz
   
 # Pipeline running
 #single cell
