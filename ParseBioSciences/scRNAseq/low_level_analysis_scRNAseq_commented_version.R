@@ -1,3 +1,11 @@
+#notes
+### if problems with null device 1 effor: 
+while (!is.null(dev.list()))  dev.off()
+dev.set(dev.next()) #x3ish 
+dev.set(dev.prev())
+
+
+
 library(scuttle)
 library(scran)
 library(irlba)
@@ -15,10 +23,13 @@ use_condaenv(condaenv="scanpy-p3.9")
 
 umap = import('umap')
 
-path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_unfiltered/'
-sample_info <- read.table('/data2/hanna/synaptogenesis/newvolume/analysis/sample_info_alt.tab',
+path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/combined/all-well/DGE_unfiltered/'
+sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
-  
+#eddit smaple info current
+#remove quotes and row names (row.names = FALSE sep='\t', quotes=FALSE)
+#add the code for the changes in the sample_info
+
 #read the spare matrix into counts
 #read the geneIDs, names and genome-of-origine into genes 
 counts    <- t(readMM(paste0(path2data, "DGE.mtx")))
@@ -32,9 +43,23 @@ genes_human <- genes[genes$genome == "hg38",]
 genes_mouse <- genes[genes$genome == "mm10",]
 
 dim(counts)
-#[1]  62703 426237
-dim(counts[,ngenes > 500])
-#[1] 62703 52719
+#[1] 119684 2660423
+dim(counts[,ngenes > 400 & lib.sizes > 500])
+#[1] 119684  70566
+
+counts   <- counts[,ngenes > 400 & lib.sizes > 500]
+metadata <- metadata[ngenes > 400 & lib.sizes > 500,]
+lib.sizes <- colSums(counts)
+ngenes    <- colSums(counts > 0)
+
+pdf("hist_ngenes_libsize_ratio.pdf")
+hist(ngenes/lib.sizes)
+dev.off()
+
+counts   <- counts[,ngenes/lib.sizes < 0.9]
+metadata <- metadata[ngenes/lib.sizes < 0.9,]
+lib.sizes <- colSums(counts)
+ngenes    <- colSums(counts > 0)
 
 #create a vector with nrow(metadata) many NAs for smaple_bc1_well, smaple_nuber and smaple_name_human/mouse 
 sample_bc1_well <- rep(NA, nrow(metadata))        
@@ -42,27 +67,34 @@ sample_number   <- rep(NA, nrow(metadata))
 sample_name_human     <- rep(NA, nrow(metadata))
 sample_name_mouse     <- rep(NA, nrow(metadata))
 
-#creating avector withinformation of which well the cell is in which well
+#changing the sample_infro.tab for Feline's data 
+sample_info$H_day <- sample_info$H_Timepoint 
+sample_info$H_day <- gsub("55\\+","",sample_info$H_day)
+sample_info$H_day <- as.integer(sample_info$H_day)
+sample_info$H_day <-  sample_info$H_day +55
+sample_info$Sample_name_H <- paste(sample_info$H_Batch, sample_info$H_day, sample_info$H_Replicate, sep="_")
+
+sample_info$M_day <- sample_info$M_Timepoint
+sample_info$M_day <- gsub("8\\+","",sample_info$M_day)
+sample_info$M_day <- as.integer(sample_info$M_day)
+sample_info$M_day <-  sample_info$M_day +8
+sample_info$Sample_name_M <- paste(sample_info$M_Batch, sample_info$M_day, sample_info$M_Replicate, sep="_")
+
+#write.table(sample_info, file = "/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info_alt.tab"
+            , sep = "\t", row.names=FALSE, quote=FALSE)
+#write.csv(metadata, "/data2/hanna/synaptogenesis/newvolume/analysis/metadata_alt.csv", row.names=FALSE, quote = FALSE)
+
+#creating a vector with information of which well the cell is in
 samples <- unique(sample_info$Sample_well)
 for (i in 1:length(samples)){
   sample_bc1_well[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))] <- sample_info$Sample_well[i]
-  sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]   <- sample_info$Sample_number[i]
+  sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]   <- sample_info$Sample_Number[i]
   sample_name_human[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_H[i]
   sample_name_mouse[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_M[i]
 }
 sample_name_human <- gsub(" ","_",sample_name_human)
 sample_name_mouse <- gsub(" ","_",sample_name_mouse)
 
-#changing the sample_infro.tab for Feline's data 
-sample_info$H_day <- gsub("55\\+","",sample_info$H_day)
-sample_info$H_day <- as.integer(sample_info$H_day)
-sample_info$H_day <-  sample_info$H_day +55
-sample_info$Sample_name_H <- paste(sample_info$H_Batch, sample_info$H_day, sample_info$H_Replicate, sep="_")
-
-sample_info$M_day <- gsub("8\\+","",sample_info$M_day)
-sample_info$M_day <- as.integer(sample_info$M_day)
-sample_info$M_day <-  sample_info$H_day +8
-sample_info$Sample_name_M <- paste(sample_info$M_Batch, sample_info$M_day, sample_info$M_Replicate, sep="_")
 
 #creating submeta columns for human and mouse samples 
 submeta_human <- data.frame(rlist::list.rbind(strsplit(sample_name_human, split="_")))
@@ -78,7 +110,8 @@ metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well
 
 plot_df <- metadata
 
-setwd('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/QC')
+#setwd('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/QC')
+setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC')
 
 #visualising metadata for human sample 
 ggplot(plot_df, aes (x = factor(sample_name_human), y = as.numeric(lib.sizes))) +
@@ -99,7 +132,7 @@ ggplot(plot_df, aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes))) 
 ggsave("UMIsBySample_beforeQC_M.pdf")
  
 pdf("cell_complexity.pdf")
-ggp <- qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
+ggp <- qplot(lib.sizes, ngenes, col = ifelse(ngenes > 400 & lib.sizes > 500 , "drop", "keep")) +
   scale_x_log10() +
   scale_y_log10() +
   theme_minimal() + 
@@ -109,19 +142,17 @@ ggp <- qplot(lib.sizes, ngenes, col = ifelse(ngenes < 500, "drop", "keep")) +
 dev.off()
 print(ggp)
 
-### if problems with null device 1 effor: 
-while (!is.null(dev.list()))  dev.off()
-dev.set(dev.next()) #x3ish 
-dev.set(dev.prev())
 
-dim(counts[,ngenes > 500])
-#[1] 62703 52719
 
-counts   <- counts[,ngenes > 500]
-metadata <- metadata[ngenes > 500,]
-lib.sizes <- colSums(counts)
-ngenes    <- colSums(counts > 0)
 
+
+
+
+
+
+
+
+#########################################
 #connecting to BioMart datasets
 ensembl_human <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror="uswest")
 ensembl_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror="uswest")
