@@ -132,7 +132,7 @@ ggplot(plot_df, aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes))) 
 ggsave("UMIsBySample_beforeQC_M.pdf")
  
 pdf("cell_complexity.pdf")
-ggp <- qplot(lib.sizes, ngenes, col = ifelse(ngenes > 400 & lib.sizes > 500 , "drop", "keep")) +
+qplot(lib.sizes, ngenes, col = ifelse(ngenes > 400 & lib.sizes > 500 , "drop", "keep")) +
   scale_x_log10() +
   scale_y_log10() +
   theme_minimal() + 
@@ -154,8 +154,8 @@ print(ggp)
 
 #########################################
 #connecting to BioMart datasets
-ensembl_human <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror="uswest")
-ensembl_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror="uswest")
+ensembl_human <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror = "useast")
+ensembl_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror = "useast")
 
 #retriving user specified atributes form the BioMart dataset of interest
 gene_map_H  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
@@ -165,83 +165,56 @@ gene_map_M  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_
 
 #retiving mitochodnral genes to find the mitochondrial fraction  
 mt.index_H    <- gene_map_H$chromosome_name == "MT"
-mt.counts_H   <- counts[which(genes$gene_name %in% gene_map_H$hgnc_symbol[mt.index_H]), ]
-mt.fraction_H <- colSums(mt.counts_H)/lib.sizes
-
-mt.p_H   <- pnorm(mt.fraction_H, mean = median(mt.fraction_H), sd = mad(mt.fraction_H), lower.tail = FALSE)
-mt.lim_H <- min(mt.fraction_H[which(p.adjust(mt.p_H, method = "fdr") < 0.05)])
-
 mt.index_M    <- gene_map_M$chromosome_name == "MT"
-mt.counts_M   <- counts[which(genes$gene_name %in% gene_map_M$hgnc_symbol[mt.index_M]), ]
-mt.fraction_M <- colSums(mt.counts_M)/lib.sizes
+mt.counts   <- counts[which(genes$gene_name %in% gene_map_H$hgnc_symbol[mt.index_H]), ]
+dim(mt.counts)
+mt.counts   <- rbind(mt.counts,counts[which(genes$gene_name %in% gene_map_M$hgnc_symbol[mt.index_M]), ])
+dim(mt.counts)
+mt.fraction <- colSums(mt.counts/lib.sizes)
 
-mt.p_M   <- pnorm(mt.fraction_M, mean = median(mt.fraction_M), sd = mad(mt.fraction_M), lower.tail = FALSE)
-mt.lim_M <- min(mt.fraction_M[which(p.adjust(mt.p_M, method = "fdr") < 0.05)])
-
-#Threhdold
-mt.lim_H
-mt.lim_M
-#[1] 0.08196721
-
-mt.lim_H <- min(mt.fraction_H[which(p.adjust(mt.p_H, method = "fdr") < 0.001)])
-mt.lim_M <- min(mt.fraction_M[which(p.adjust(mt.p_M, method = "fdr") < 0.001)])
+mt.p  <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
+mt.lim<- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
 
 #Threhdold
-mt.lim_H
-mt.lim_M
-#[1] 0.1046875
+mt.lim
+#[1] 0.04396735
 
-metadata <- data.frame(cbind(metadata,mt.fraction_H))
-metadata <- data.frame(cbind(metadata,mt.fraction_M))
+mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
 
-#human mtreadfraction
-### there is a problem with null device 1 error after dec.off()
-pdf("H_mtreadfraction1.pdf")
-hplot <- qplot(lib.sizes, mt.fraction_H, col = ifelse(mt.fraction_H>mt.lim_H, "drop", "keep")) +
+#Threhdold
+mt.lim
+#[1] 0.06210699
+
+metadata <- data.frame(cbind(metadata,mt.fraction))
+
+#mtreadfraction
+pdf("Mtreadfraction.pdf")
+qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
   scale_x_log10() +
   labs(x = "UMI count", y = "MT read fraction") +
   theme_minimal() + 
   theme(text = element_text(size=20),legend.position = "none")  +
   scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
 dev.off()
-print(hplot)
+print(plot)
 
-#mouse mtreadfraction
-### ther eis problem with the mt.lim_M being zero thus the graph looks like a line 
-pdf("M_mtreadfraction1.pdf")
-mplot <- qplot(lib.sizes, mt.fraction_M, col = ifelse(mt.fraction_M>mt.lim_M, "drop", "keep")) +
-  scale_x_log10() +
-  labs(x = "UMI count", y = "MT read fraction") +
-  theme_minimal() + 
-  theme(text = element_text(size=20),legend.position = "none")  +
-  scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
-dev.off()
-print(mplot)
-
-dim(counts[,mt.fraction_H < mt.lim_H])
+dim(counts[,mt.fraction < mt.lim])
 #[1] 112627  15897
-dim(counts[,mt.fraction_M < mt.lim_M])
+dim(counts[,mt.fraction < mt.lim])
 #[1] 112627      0
 
-dim(counts[,mt.fraction_H < 0.2])
+dim(counts[,mt.fraction < 0.2])
 #[1] 112627  16069
-dim(counts[,mt.fraction_M < 0.2])
-#[1] 112627  16073
 
 mtlim <- 0.2
 
 #chooseing the counts with mt. fraction lover than treshold for sce.
-sce_human <- SingleCellExperiment(list(counts=counts[,mt.fraction_H < mt.lim_H]),
-  colData=DataFrame(metadata[mt.fraction_H < mt.lim_H,]))
-rownames(sce_human) <- genes$gene_id
-sce_mouse <- SingleCellExperiment(list(counts=counts[,mt.fraction_M < mt.lim_M]),
-  colData=DataFrame(metadata[mt.fraction_M < mt.lim_M,]))
-rownames(sce_mouse) <- genes$gene_id
+sce_human <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),
+  colData=DataFrame(metadata[mt.fraction < mt.lim,]))
+rownames(sce) <- genes$gene_id
 
-rownames(genes) <- rownames(sce_human)
-rowData(sce_human) <- DataFrame(genes)
-rownames(genes) <- rownames(sce_mouse)
-rowData(sce_mouse) <- DataFrame(genes)
+rownames(genes) <- rownames(sce)
+rowData(sce) <- DataFrame(genes)
 
 colnames(sce_human) <- metadata$bc_wells[mt.fraction_H  < mt.lim_H]
 colData(sce_human)  <- DataFrame(metadata[mt.fraction_H < mt.lim_H,])
