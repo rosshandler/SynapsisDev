@@ -1,11 +1,3 @@
-#notes
-### if problems with null device 1 effor: 
-while (!is.null(dev.list()))  dev.off()
-dev.set(dev.next()) #x3ish 
-dev.set(dev.prev())
-
-
-
 library(scuttle)
 library(scran)
 library(irlba)
@@ -67,7 +59,7 @@ sample_number   <- rep(NA, nrow(metadata))
 sample_name_human     <- rep(NA, nrow(metadata))
 sample_name_mouse     <- rep(NA, nrow(metadata))
 
-#changing the sample_infro.tab for Feline's data 
+#changing the sample_info.tab for Feline's data 
 sample_info$H_day <- sample_info$H_Timepoint 
 sample_info$H_day <- gsub("55\\+","",sample_info$H_day)
 sample_info$H_day <- as.integer(sample_info$H_day)
@@ -209,39 +201,30 @@ dim(counts[,mt.fraction < 0.2])
 mtlim <- 0.2
 
 #chooseing the counts with mt. fraction lover than treshold for sce.
-sce_human <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),
+sce <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),
   colData=DataFrame(metadata[mt.fraction < mt.lim,]))
 rownames(sce) <- genes$gene_id
 
 rownames(genes) <- rownames(sce)
 rowData(sce) <- DataFrame(genes)
 
-colnames(sce_human) <- metadata$bc_wells[mt.fraction_H  < mt.lim_H]
-colData(sce_human)  <- DataFrame(metadata[mt.fraction_H < mt.lim_H,])
-colnames(sce_mouse) <- metadata$bc_wells[mt.fraction_M  < mt.lim_M]
-colData(sce_mouse)  <- DataFrame(metadata[mt.fraction_M < mt.lim_M,])
-
-lib.sizes_human <- colSums(counts(sce_human))
-sce_filt_human  <- sce_human[calculateAverage(sce_human)>0.05,]
-lib.sizes_mouse <- colSums(counts(sce_mouse))
-sce_filt_mouse  <- sce_mouse[calculateAverage(sce_mouse)>0.05,]
-
-clusts_human <- as.numeric(quickCluster(sce_filt_human, method = "igraph", min.size = 100))
-clusts_mouse <- as.numeric(quickCluster(sce_filt_mouse, method = "igraph", min.size = 100))
-
-min.clust_human <- min(table(clusts_human))/2
-new_sizes_human <- c(floor(min.clust_human/3), floor(min.clust_human/2), floor(min.clust_human))
-sce_filt_human <- computeSumFactors(sce_filt_human, clusters = clusts_human, sizes = new_sizes_human, max.cluster.size = 3000)
-min.clust_mouse <- min(table(clusts_mouse))/2
-new_sizes_mouse <- c(floor(min.clust_mouse/3), floor(min.clust_mouse/2), floor(min.clust_mouse))
-sce_filt_mouse <- computeSumFactors(sce_filt_mouse, clusters = clusts_mouse, sizes = new_sizes_mouse, max.cluster.size = 3000)
-
-sizeFactors(sce_human) <- sizeFactors(sce_filt_human)
-sizeFactors(sce_mouse) <- sizeFactors(sce_filt_mouse)
+colnames(sce) <- metadata$bc_wells[mt.fraction  < mt.lim]
+colData(sce)  <- DataFrame(metadata[mt.fraction < mt.lim,])
 
 
-pdf("sizefactors_H.pdf")
-ggplot(data = data.frame(X = lib.sizes_human, Y = sizeFactors(sce_human)), mapping = aes(x = X, y = Y)) +
+lib.sizes <- colSums(counts(sce))
+sce_filt  <- sce[calculateAverage(sce)>0.05,]
+
+clusts <- as.numeric(quickCluster(sce_filt, method = "igraph", min.size = 100))
+
+min.clust <- min(table(clusts))/2
+new_sizes <- c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
+sce_filtn <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
+
+sizeFactors(sce) <- sizeFactors(sce_filt)
+
+pdf("sizefactors.pdf")
+ggplot(data = data.frame(X = lib.sizes, Y = sizeFactors(sce)), mapping = aes(x = X, y = Y)) +
   geom_point() +
   scale_x_log10(breaks = c(500, 2000, 5000, 10000, 30000), labels = c("5,00", "2,000", "5,000", "10,000", "30,000") ) +
   scale_y_log10(breaks = c(0.2, 1, 5)) +
@@ -250,72 +233,43 @@ ggplot(data = data.frame(X = lib.sizes_human, Y = sizeFactors(sce_human)), mappi
   labs(x = "Number of UMIs", y = "Size Factor")
 dev.off()
 
-pdf("sizefactors_M.pdf")
-ggplot(data = data.frame(X = lib.sizes_mouse, Y = sizeFactors(sce_mouse)), mapping = aes(x = X, y = Y)) +
-  geom_point() +
-  scale_x_log10(breaks = c(500, 2000, 5000, 10000, 30000), labels = c("5,00", "2,000", "5,000", "10,000", "30,000") ) +
-  scale_y_log10(breaks = c(0.2, 1, 5)) +
-  theme_minimal() +
-  theme(text = element_text(size=20))  +
-  labs(x = "Number of UMIs", y = "Size Factor")
-dev.off()
-
-plot <- ggplot(data.frame(colData(sce_human)), aes (x = factor(sample_name_human), y = as.numeric(lib.sizes_human))) +
+ggplot(data.frame(colData(sce)), aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
   scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
     labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
-print(plot)
-ggsave("UMIsBySample_afterQC_H.pdf")
-
-ggplot(data.frame(colData(sce_mouse)), aes (x = factor(sample_name_mouse), y = as.numeric(lib.sizes_mouse))) +
-  geom_boxplot() +
-  theme_bw() +  coord_flip() +
-  labs(x = "Batch", y = "Number of UMIs") +
-  scale_y_log10(breaks = c(100, 1000, 5000, 10000, 50000, 100000),
-    labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
-ggsave("UMIsBySample_afterQC_M.pdf")
-
+ggsave("UMIsBySample_afterQC.pdf")
 
 library(BiocParallel)
 
 bp <- MulticoreParam(12, RNGseed=1234)
 bpstart(bp)
 #detection and evaluation of doublets/multiplets
-sce_human <- scDblFinder(sce_human, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
+sce <- scDblFinder(sce, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce_human$scDblFinder.class)
 #singlet doublet 
 #  49995    1915
 
-bp <- MulticoreParam(12, RNGseed=1234)
-bpstart(bp)
-sce_mouse <- scDblFinder(sce_mouse, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
-bpstop(bp)
-table(sce_mouse$scDblFinder.class)
-#singlet doublet 
-#  49995    1915
-
 #normalisation
-sce_filt_human <- sce_human[calculateAverage(sce_human)>0.05,]
-sce_filt_mouse <- sce_mouse[calculateAverage(sce_mouse)>0.05,]
+sce_filt <- sce[calculateAverage(sce)>0.05,]
+sce_filt <- logNormCounts(sce_filt)
 
-sce_filt_human <- logNormCounts(sce_filt_human)
-sce_filt_mouse <- logNormCounts(sce_filt_mouse)
+decomp <- modelGeneVar(sce_filt)
+hvgs   <- rownames(decomp)[decomp$FDR < 0.5]
+pca    <- prcomp_irlba(t(logcounts(sce_filt[hvgs,])), n = 30)
+rownames(pca$x) <- colnames(sce_filt)
+tsne <- Rtsne(pca$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
 
-decomp_human  <- modelGeneVar(sce_filt_human)
-hvgs_human    <- rownames(decomp_human)[decomp_human$FDR < 0.5]
-pca_human     <- prcomp_irlba(t(logcounts(sce_filt_human[hvgs_human,])), n = 30)
-rownames(pca_human$x) <- colnames(sce_filt_human)
-tsne <- Rtsne(pca_human$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
 
-decomp_mouse  <- modelGeneVar(sce_filt_mouse)
-hvgs_mouse    <- rownames(decomp_mouse)[decomp_mouse$FDR < 0.5]
-pca_mouse     <- prcomp_irlba(t(logcounts(sce_filt_mouse[hvgs_mouse,])), n = 30)
-rownames(pca_mouse$x) <- colnames(sce_filt_mouse)
-tsne <- Rtsne(pca_mouse$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
-###########################################################################
+
+
+
+
+
+
+
 layout  <- umap(pca$x, method="umap-learn", umap_learn_args=c("n_neighbors", "n_epochs", "min_dist"), n_neighbors=30, min_dist=.25)
 
 df_plot <- data.frame(
