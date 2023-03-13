@@ -11,8 +11,8 @@ compute.log.lik <- function(D, w, mean) {
   
   w <- as.numeric(unlist(w))
   #using L from the global environment 
-  L[,1] = dpois(D, mean[1], log = FALSE)
-  L[,2] = dpois(D, mean[2], log = FALSE)
+  L[,1] = dpois(D, mean[1], log = TRUE)
+  L[,2] = dpois(D, mean[2], log = TRUE)
   
   L[,1] = L[,1]*w[1]
   L[,2] = L[,2]*w[2]
@@ -24,31 +24,22 @@ L = matrix(NA, nrow=length(D), ncol= 2)
 
 
 #generating EM function 
-mixture.EM <- function(lam.init ,w.init, L, D) {
-  browser()  
+mixture.EM <- function(lam.init ,w.init, L, D) { 
   w.curr <- w.init
   lam.curr <- lam.init
   D <- as.numeric(D)
-  L[,1] <- dpois(D, lam.init[1], log = FALSE)
-  head(L[,1])
-[1] 9.049905e-300  0.000000e+00  0.000000e+00  0.000000e+00 3.763148e-128
-[6]  5.023191e-07
-  L[,2] <- dpois(D, lam.init[2], log = FALSE)
-  head(L[,2])
-[1] 4.307120e-66 0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00
-[6] 1.552059e-47
-  
+  L[,1] <- dpois(D, lam.init[1], log = TRUE)
+ 
+  L[,2] <- dpois(D, lam.init[2], log = TRUE)
+ 
 
   # store log-likehoods for each iteration
   log_liks <- c()
   ll       <- compute.log.lik(D, w.curr, lam.curr)
-  head(ll)
-[1] -Inf
   log_liks <- c(log_liks, ll)
   delta.ll <- 1
 
   while(delta.ll > 1e-5 & delta.ll != "NaN") {
-    browser()
     out   <- EM.iter(w.curr, L, D)
     ll       <- compute.log.lik(D, out$w.next, out$lam.next)
     log_liks <- c(log_liks, ll)
