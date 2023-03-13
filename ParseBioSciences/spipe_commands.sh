@@ -177,47 +177,57 @@ nohup split-pipe \
     
 
 #mouse reference genome (written to '/data2/hanna/synaptogenesis/newvolume/analysis')
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.ACTTGA.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.ACTTGA.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/ACTTGA_m
+--output_dir $PBS2/analysis/ACTTGA_m &
+[1] 10252
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.AGTCAA.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.AGTCAA.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/AGTCAA_m
+--output_dir $PBS2/analysis/AGTCAA_m &
+[2] 10459
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.AGTTCC.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.AGTTCC.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/AGTTCC_m
+--output_dir $PBS2/analysis/AGTTCC_m &
+[3] 10743
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.ATGTCA.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.ATGTCA.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/ATGTCA_m
+--output_dir $PBS2/analysis/ATGTCA_m &
+[4] 10953
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.CAGATC.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.CAGATC.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/CAGATC_m
+--output_dir $PBS2/analysis/CAGATC_m &
+[5] 11267
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.CTTGTA.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.CTTGTA.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/CTTGTA_m
+--output_dir $PBS2/analysis/CTTGTA_m &
+[6] 11486
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.GATCAG.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.GATCAG.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/GATCAG_m
+--output_dir $PBS2/analysis/GATCAG_m &
+[7] 11734
 
-split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
+nohup split-pipe --mode all --kit WT --chemistry v2 --genome_dir $PBS/newvolume/genomes/mm10/ \
 --fq1 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.TAGCTT.s_1.r_1.fq.gz \
 --fq2 $PBS/newvolume/expdata/correctFastq/SLX-22602.DNAA007.HGMLNDMXY.TAGCTT.s_1.r_2.fq.gz \
---output_dir $PBS2/analysis/TAGCTT_m
+--output_dir $PBS2/analysis/TAGCTT_m &
+[8] 11981
 
-split-pipe \
+nohup split-pipe \
     --mode comb \
     --sublibraries $PBS2/analysis/ACTTGA_m $PBS2/analysis/AGTCAA_m $PBS2/analysis/AGTTCC_m $PBS2/analysis/ATGTCA_m $PBS2/analysis/CAGATC_m $PBS2/analysis/CTTGTA_m $PBS2/analysis/GATCAG_m  $PBS2/analysis/TAGCTT_m \
-    --output_dir $PBS2/analysis/combined_m
+    --output_dir $PBS2/analysis/combined_m &
+    [9] 12229
+    
