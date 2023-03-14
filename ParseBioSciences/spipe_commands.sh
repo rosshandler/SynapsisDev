@@ -172,7 +172,7 @@ nohup split-pipe \
     --mode comb \
     --sublibraries $PBS2/analysis/ACTTGA_h $PBS2/analysis/AGTCAA_h $PBS2/analysis/AGTTCC_h $PBS2/analysis/ATGTCA_h $PBS2/analysis/CAGATC_h $PBS2/analysis/CTTGTA_h $PBS2/analysis/GATCAG_h  $PBS2/analysis/TAGCTT_h \
     --output_dir $PBS2/analysis/combined_h &
-[7] 61563
+[1] 75156
     
     
 
@@ -229,5 +229,5 @@ nohup split-pipe \
     --mode comb \
     --sublibraries $PBS2/analysis/ACTTGA_m $PBS2/analysis/AGTCAA_m $PBS2/analysis/AGTTCC_m $PBS2/analysis/ATGTCA_m $PBS2/analysis/CAGATC_m $PBS2/analysis/CTTGTA_m $PBS2/analysis/GATCAG_m  $PBS2/analysis/TAGCTT_m \
     --output_dir $PBS2/analysis/combined_m &
-    [9] 12229
+    [1] 75404
     
