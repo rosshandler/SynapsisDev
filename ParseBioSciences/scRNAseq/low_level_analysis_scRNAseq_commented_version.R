@@ -15,18 +15,15 @@ use_condaenv(condaenv="scanpy-p3.9")
 
 umap = import('umap')
 
-path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/combined/all-well/DGE_unfiltered/'
+path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_h/all-well/DGE_unfiltered'
 sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
-#eddit smaple info current
-#remove quotes and row names (row.names = FALSE sep='\t', quotes=FALSE)
-#add the code for the changes in the sample_info
 
 #read the spare matrix into counts
 #read the geneIDs, names and genome-of-origine into genes 
-counts    <- t(readMM(paste0(path2data, "DGE.mtx")))
-genes     <- read.csv(paste0(path2data, "all_genes.csv"))
-metadata  <- read.csv(paste0(path2data, "cell_metadata.csv"))
+counts    <- t(readMM(paste0(path2data, "/DGE.mtx")))
+genes     <- read.csv(paste0(path2data, "/all_genes.csv"))
+metadata  <- read.csv(paste0(path2data, "/cell_metadata.csv"))
 
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
