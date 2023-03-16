@@ -9,12 +9,6 @@ library(viridisLite)
 library(viridis)
 library(scDblFinder)
 
-library(umap)
-library(reticulate)
-#use_condaenv(condaenv="scanpy-p3.9")
-
-umap = import('umap')
-
 path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_h/all-well/DGE_unfiltered'
 sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
@@ -202,6 +196,8 @@ table(sce$scDblFinder.class)
 #normalisation
 sce_filtn <- sce[calculateAverage(sce)>0.05,]
 sce_filtn <- logNormCounts(sce_filtn)
+
+###########sce_filtn <- readRDS(paste0(path2data, "/DGE.mtx")) 
 
 decomp <- modelGeneVar(sce_filtn)
 hvgs   <- rownames(decomp)[decomp$FDR < 0.5]
