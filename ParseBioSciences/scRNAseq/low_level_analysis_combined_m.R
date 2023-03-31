@@ -21,17 +21,17 @@ lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
 genes_mouse <- genes[genes$genome == "mm10",]
-dim(counts)
-[1] 56981 1670350
-dim(counts[,ngenes > 400 & lib.sizes > 500])
-[1] 56981 25251
+#dim(counts)
+#[1] 56981 1670350
+#dim(counts[,ngenes > 400 & lib.sizes > 500])
+#[1] 56981 25251
 
 counts   <- counts[,ngenes > 400 & lib.sizes > 500]
 metadata <- metadata[ngenes > 400 & lib.sizes > 500,]
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
-hist(ngenes/lib.sizes)
+#hist(ngenes/lib.sizes)
 
 counts   <- counts[,ngenes/lib.sizes < 0.9]
 metadata <- metadata[ngenes/lib.sizes < 0.9,]
@@ -94,22 +94,40 @@ gene_map <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "chromosome_na
   
 mt.index    <- gene_map$chromosome_name == "MT"
 mt.counts   <- counts[which(genes$gene_name %in% gene_map$mgi_symbol[mt.index]), ]
-mt.fraction <- colSums(mt.counts/lib.sizes)
+mt.count    <- colSums(mt.counts)
+mt.fraction <- mt.count/lib.sizes
+
 dim(mt.counts)
-[1] 37 25251
+#37 25251
+length(mt.count)
+#25251
+length(mt.fraction)
+#25251
+min(mt.fraction)
+# 0
+max(mt.fraction)
+# 0.6363441
+
+#after colSums(mt.counts/lib.sizes) and before divding by mt.count
+#min(mt.fraction)
+#0
+#max(mt.fraction)
+#55.66854
+
+
 
 mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
 mt.lim
-[1] 0.06476871
+[1] 0.04253697
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
 mt.lim
-[1] 0.08989784
+[1] 0.0531401
 
 metadata <- data.frame(cbind(metadata,mt.fraction))
 
 pdf("Mtreadfraction.pdf")
-qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
+qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction > mt.lim, "drop", "keep")) +
   scale_x_log10() +
   labs(x = "UMI count", y = "MT read fraction") +
   theme_minimal() + 
@@ -119,9 +137,9 @@ dev.off()
 
 
 dim(counts[,mt.fraction < mt.lim])
-[1] 56981 21808
+[1] 56981 24697
 dim(counts[,mt.fraction < 0.2])
-[1] 56981 23593
+[1] 56981 25235
 
 mt.lim <- 0.2
 
@@ -140,10 +158,9 @@ sce_filt  <- sce[calculateAverage(sce)>0.05,]
 clusts <- as.numeric(quickCluster(sce_filt, method = "igraph", min.size = 100))
 min.clust <- min(table(clusts))/2
 new_sizes <- c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
-sce_filtn <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
+sce_filt <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
 
-
-sizeFactors(sce) <- sizeFactors(sce_filtn)
+sizeFactors(sce) <- sizeFactors(sce_filt)
 
 pdf("sizefactors.pdf")
 ggplot(data = data.frame(X = lib.sizes, Y = sizeFactors(sce)), mapping = aes(x = X, y = Y)) +
@@ -173,18 +190,18 @@ sce <- scDblFinder(sce, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce$scDblFinder.class)
 #singlet doublet 
-#22040    1553   
+#23649    1586   
   
 #normalisation
-sce_filtn <- sce[calculateAverage(sce)>0.05,]
-sce_filtn <- logNormCounts(sce_filtn)
+sce_filt <- sce[calculateAverage(sce)>0.05,]
+sce_filt <- logNormCounts(sce_filt)
 
-###########sce_filtn <- readRDS(paste0(path2data, "/DGE.mtx")) 
+###########sce_filt <- readRDS(paste0(path2data, "/DGE.mtx")) 
 
-decomp <- modelGeneVar(sce_filtn)
+decomp <- modelGeneVar(sce_filt)
 hvgs   <- rownames(decomp)[decomp$FDR < 0.5]
-pca    <- prcomp_irlba(t(logcounts(sce_filtn[hvgs,])), n = 30)
-rownames(pca$x) <- colnames(sce_filtn)
+pca    <- prcomp_irlba(t(logcounts(sce_filt[hvgs,])), n = 30)
+rownames(pca$x) <- colnames(sce_filt)
 tsne <- Rtsne(pca$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
 
 saveRDS(decomp, "decomp.rds")
@@ -210,7 +227,7 @@ df_plot <- data.frame(
 )
 
 plot.index <- order(df_plot$doublet)
-tSNE <- ggplot(df_plot[plot.index,], aes(x = tSNE1, y = tSNE2, col = factor(doublet))) +
+ggplot(df_plot[plot.index,], aes(x = tSNE1, y = tSNE2, col = factor(doublet))) +
   geom_point(size = 0.4) +
   scale_color_manual(values=c("gray","#0169c1"), name = "") +
   labs(x = "Dim 1", y = "Dim 2") +
