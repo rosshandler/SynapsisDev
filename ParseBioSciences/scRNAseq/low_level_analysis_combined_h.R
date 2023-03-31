@@ -100,8 +100,8 @@ mt.fraction <- colSums(mt.counts/lib.sizes)
 dim(mt.counts)
 [1]    37 56018
 
-mt.p  <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
-mt.lim<- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
+mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
+mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
 mt.lim
 [1] 0.05610907
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
@@ -111,7 +111,7 @@ mt.lim
 metadata <- data.frame(cbind(metadata,mt.fraction))
 
 pdf("Mtreadfraction.pdf")
-qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
+plot <- qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
   scale_x_log10() +
   labs(x = "UMI count", y = "MT read fraction") +
   theme_minimal() + 
@@ -125,10 +125,9 @@ dim(counts[,mt.fraction < mt.lim])
 dim(counts[,mt.fraction < 0.2])
 [1] 62704 51985
 
-mtlim <- 0.2
+mt.lim <- 0.2
 
-sce <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),
-  colData=DataFrame(metadata[mt.fraction < mt.lim,]))
+sce <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),colData=DataFrame(metadata[mt.fraction < mt.lim,]))
 rownames(sce) <- genes$gene_id
 
 rownames(genes) <- rownames(sce)
@@ -144,8 +143,7 @@ sce_filt  <- sce[calculateAverage(sce)>0.05,]
 #dim: 6 47004 
 #metadata(0):
 #assays(1): counts
-#rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000000460
-  ENSG00000000938
+#rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000000460 ENSG00000000938
 #rowData names(3): gene_id gene_name genome
 #colnames: NULL
 #colData names(20): bc_wells sample ... replicate mt.fraction
@@ -190,8 +188,8 @@ bpstart(bp)
 sce <- scDblFinder(sce, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce$scDblFinder.class)
-#singlet     doublet 
-#43663        3341 
+#singlet doublet 
+#48164    3821  
   
 #normalisation
 sce_filtn <- sce[calculateAverage(sce)>0.05,]
@@ -209,7 +207,7 @@ tsne <- Rtsne(pca$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
 
 library(umap)
 library(reticulate)
-use_condaenv(condaenv="scanpy-p3.9")
+use_condaenv(condaenv="scanpy")
 
 umap = import('umap')
 
@@ -225,7 +223,7 @@ df_plot <- data.frame(
 )
 
 plot.index <- order(df_plot$doublet)
-ggplot(df_plot[plot.index,], aes(x = tSNE1, y = tSNE2, col = factor(doublet))) +
+tSNE <- ggplot(df_plot[plot.index,], aes(x = tSNE1, y = tSNE2, col = factor(doublet))) +
   geom_point(size = 0.4) +
   scale_color_manual(values=c("gray","#0169c1"), name = "") +
   labs(x = "Dim 1", y = "Dim 2") +
@@ -245,6 +243,7 @@ ggplot(df_plot[plot.index,], aes(x = UMAP1, y = UMAP2, col = factor(doublet))) +
   theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
   theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
   guides(colour = guide_legend(override.aes = list(size=7)))
+ggsave("umap_doublets.pdf")
 
 colData(sce) <- DataFrame(df_plot)
 
