@@ -9,12 +9,10 @@ library(viridisLite)
 library(viridis)
 library(scDblFinder)
 
-path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_h/all-well/DGE_unfiltered'
+path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_m/all-well/DGE_unfiltered'
 sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
 
-#read the spare matrix into counts
-#read the geneIDs, names and genome-of-origine into genes 
 counts    <- t(readMM(paste0(path2data, "/DGE.mtx")))
 genes     <- read.csv(paste0(path2data, "/all_genes.csv"))
 metadata  <- read.csv(paste0(path2data, "/cell_metadata.csv"))
@@ -22,11 +20,11 @@ metadata  <- read.csv(paste0(path2data, "/cell_metadata.csv"))
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
-genes_human <- genes[genes$genome == "hg38",]
+genes_mouse <- genes[genes$genome == "mm10",]
 dim(counts)
-[1]   62704 2214461
+[1] 56981 1670350
 dim(counts[,ngenes > 400 & lib.sizes > 500])
-[1] 62704 56066
+[1] 56981 25251
 
 counts   <- counts[,ngenes > 400 & lib.sizes > 500]
 metadata <- metadata[ngenes > 400 & lib.sizes > 500,]
@@ -42,7 +40,7 @@ ngenes    <- colSums(counts > 0)
 
 sample_bc1_well <- rep(NA, nrow(metadata))        
 sample_number   <- rep(NA, nrow(metadata))
-sample_name    <- rep(NA, nrow(metadata))
+sample_name_m    <- rep(NA, nrow(metadata))
 
 #editing sample info
 sample_info$H_day <- sample_info$H_Timepoint 
@@ -61,18 +59,18 @@ samples <- unique(sample_info$Sample_well)
 for (i in 1:length(samples)){
   sample_bc1_well[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))] <- sample_info$Sample_well[i]
   sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]   <- sample_info$Sample_Number[i]
-  sample_name[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_H[i]
+  sample_name_m[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_M[i]
 }
 
-submeta <- data.frame(rlist::list.rbind(strsplit(sample_name, split="_")))
+submeta <- data.frame(rlist::list.rbind(strsplit(sample_name_m, split="_")))
 colnames(submeta) <- c("batch", "day", "replicate")
 submeta$day <- gsub("d","",submeta$day)
 
-metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name, submeta))
+metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name_m, submeta))
 plot_df <- metadata
-setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC_h')
+setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC_m')
 
-ggplot(plot_df, aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
+ggplot(plot_df, aes (x = factor(sample_name_m), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
@@ -90,40 +88,40 @@ qplot(lib.sizes, ngenes, col = ifelse(ngenes > 400 & lib.sizes > 500 , "drop", "
   scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
 dev.off()
 
-ensembl <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror = "useast")
-gene_map  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_name"),
-  filters = "hgnc_symbol", values = genes$gene_name, mart = ensembl)
+ensembl <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl" ,mirror = "useast")
+gene_map <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol", "chromosome_name"),
+                  filters = "mgi_symbol", values = genes$gene_name, mart = ensembl)
   
 mt.index    <- gene_map$chromosome_name == "MT"
-mt.counts   <- counts[which(genes$gene_name %in% gene_map$hgnc_symbol[mt.index]), ]
+mt.counts   <- counts[which(genes$gene_name %in% gene_map$mgi_symbol[mt.index]), ]
 mt.fraction <- colSums(mt.counts/lib.sizes)
 dim(mt.counts)
-[1]    37 56018
+[1] 37 25251
 
 mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
 mt.lim
-[1] 0.05610907
+[1] 0.06476871
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
 mt.lim
-[1] 0.07825714
+[1] 0.08989784
 
 metadata <- data.frame(cbind(metadata,mt.fraction))
 
 pdf("Mtreadfraction.pdf")
-plot <- qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
+qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
   scale_x_log10() +
   labs(x = "UMI count", y = "MT read fraction") +
   theme_minimal() + 
   theme(text = element_text(size=20),legend.position = "none")  +
   scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
 dev.off()
-print(plot)
+
 
 dim(counts[,mt.fraction < mt.lim])
-[1] 62704 47004
+[1] 56981 21808
 dim(counts[,mt.fraction < 0.2])
-[1] 62704 51985
+[1] 56981 23593
 
 mt.lim <- 0.2
 
@@ -139,26 +137,12 @@ colData(sce)  <- DataFrame(metadata[mt.fraction < mt.lim,])
 lib.sizes <- colSums(counts(sce))
 sce_filt  <- sce[calculateAverage(sce)>0.05,]
 
-#class: SingleCellExperiment 
-#dim: 6 47004 
-#metadata(0):
-#assays(1): counts
-#rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000000460 ENSG00000000938
-#rowData names(3): gene_id gene_name genome
-#colnames: NULL
-#colData names(20): bc_wells sample ... replicate mt.fraction
-#reducedDimNames(0):
-#mainExpName: NULL
-#altExpNames(0):
-
-#Cluster similar cells based on their expression profiles, using either log-expression values or ranks.
 clusts <- as.numeric(quickCluster(sce_filt, method = "igraph", min.size = 100))
 min.clust <- min(table(clusts))/2
 new_sizes <- c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
 sce_filtn <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
 
-#A size factor is a scaling factor used to divide the raw counts of a particular cell to obtain normalized expression values/
-#Gets or sets the size factors for all cells in a SingleCellExperiment object.
+
 sizeFactors(sce) <- sizeFactors(sce_filtn)
 
 pdf("sizefactors.pdf")
@@ -171,7 +155,7 @@ ggplot(data = data.frame(X = lib.sizes, Y = sizeFactors(sce)), mapping = aes(x =
   labs(x = "Number of UMIs", y = "Size Factor")
 dev.off()
 
-ggplot(data.frame(colData(sce)), aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
+ggplot(data.frame(colData(sce)), aes (x = factor(sample_name_m), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
   theme_bw() +  coord_flip() +
   labs(x = "Batch", y = "Number of UMIs") +
@@ -189,7 +173,7 @@ sce <- scDblFinder(sce, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce$scDblFinder.class)
 #singlet doublet 
-#48164    3821  
+#22040    1553   
   
 #normalisation
 sce_filtn <- sce[calculateAverage(sce)>0.05,]
@@ -203,7 +187,10 @@ pca    <- prcomp_irlba(t(logcounts(sce_filtn[hvgs,])), n = 30)
 rownames(pca$x) <- colnames(sce_filtn)
 tsne <- Rtsne(pca$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
 
-
+saveRDS(decomp, "decomp.rds")
+saveRDS(hvgs, "hvgs.rds")
+saveRDS(pca, "pca.rds")
+saveRDS(tsne, "tsne.rds")
 
 library(umap)
 library(reticulate)
@@ -247,4 +234,5 @@ ggsave("umap_doublets.pdf")
 
 colData(sce) <- DataFrame(df_plot)
 
-saveRDS(sce,paste0(path2data,"sce.rds"))
+
+saveRDS(sce,"sce.rds")
