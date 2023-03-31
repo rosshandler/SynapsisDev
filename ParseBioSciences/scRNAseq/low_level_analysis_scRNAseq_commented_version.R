@@ -164,7 +164,6 @@ mt.fraction <- colSums(mt.counts/lib.sizes)
 mt.p  <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
 mt.lim<- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
 
-#Threhdold
 mt.lim
 #[1] 0.04396735
 
@@ -195,7 +194,7 @@ dim(counts[,mt.fraction < mt.lim])
 dim(counts[,mt.fraction < 0.2])
 #[1] 112627  16069
 
-mtlim <- 0.2
+mt.lim <- 0.2
 
 #chooseing the counts with mt. fraction lover than treshold for sce.
 sce <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),
@@ -216,7 +215,7 @@ clusts <- as.numeric(quickCluster(sce_filt, method = "igraph", min.size = 100))
 
 min.clust <- min(table(clusts))/2
 new_sizes <- c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
-sce_filtn <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
+sce_filt <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
 
 sizeFactors(sce) <- sizeFactors(sce_filt)
 
