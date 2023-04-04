@@ -1,5 +1,5 @@
 #modelling data
-lam <- c(100, 850)
+lam <- c(500, 1050)
 set.seed(1234)
 Z = rbinom(500, 1, 0.6)
 D <- rpois(1000000, lam[Z+1])
@@ -25,6 +25,11 @@ L = matrix(NA, nrow=length(D), ncol= 2)
 
 #generating EM function 
 mixture.EM <- function(lam.init ,w.init, L, D) { 
+  if (length(lam.init) != 2) {
+    stop("lam.init must be a vector of length 2")
+  }
+  
+  #initialising
   w.curr <- w.init
   lam.curr <- lam.init
   D <- as.numeric(D)
@@ -75,9 +80,35 @@ EM.iter <- function(w.curr, L, D, ...) {
   return(out)
 }
 
-#reading data
+##############testing#####################
+#real:  500, 1050
+ee <- mixture.EM(lam.init = c(100, 500), w.init=c(0.5,0.5), L, D)
+ee[5] 
+result: 815.6992 1023.0535
+
+#real: 500, 1050
+ee <- mixture.EM(lam.init = c(400,900), w.init=c(0.5,0.5), L, D)
+results: 1005.6979  537.9321
+
+#real: 500, 1050
+ee <- mixture.EM(lam.init = c(10, 1000), w.init=c(0.5,0.5), L, D)
+ee[5] 
+result:846.5213 510.4158
+
+#real: 500, 1050
+ee <- mixture.EM(lam.init = c(450, 1000), w.init=c(0.5,0.5), L, D)
+ee[5] 
+result: 1034.1380  516.9844
+
+#the better the mean estimates the better the result. 
+
+
+
+############runinign the EM################
+
 metadata <- read.csv('/data2/hanna/synaptogenesis/newvolume/analysis/metadata_alt.csv')
 D <- metadata$tscp_count
+L = matrix(NA, nrow=length(D), ncol= 2)
 
 #estimating means 
 h_fraction <- metadata$tscp_count[metadata$cell_species == 'h']
@@ -99,7 +130,52 @@ lam[2] <- mean(m_fraction)
 lam
 [1] 5077.281 6497.055
 
-ee <- mixture.EM(lam.init = c(5070, 6500), w.init=c(0.5,0.5), L, D)
+ee <- mixture.EM(lam.init = lam, w.init=c(0.5,0.5), L, D)
+write.csv(ee, "EM_output_combined.csv")
+write.csv(ee[3], "posteriors.csv")
+
+ee[1] 
+0.425425481269943..0.574574518730057
+
+ee[2]
+Na Na
+
+ee[4] 
+5077.281 6497.055
+
+ee[5]
+6661.947 4475.769 
+
+posteriors < - ee[[3]]
+colnames(posteriors) <- ee[5]
+rownames(posteriors) <- metadata$bc_wells
+posteriors <- cbind(posteriors, rep(NA, nrow(posteriors)))
+colnames(posteriors)[3] <- "species" 
+
+colnames(posteriors) <- c("m","h", "species")
+for (i in 1:nrow(posteriors)){
+  if (posteriors[i,1] > 0.5){
+    posteriors[i,3] <- "m"}
+  else {posteriors[i,3] <- "h"
+  }
+}
+
+write.csv(posteriors, "posteriors.csv")
+
+H_cells <- posteriors[posteriors[,3]=="h",]
+M_cells <- posteriors[posteriors[,3]=="m",]
+
+dim(M_cells)
+[1] 10909     4
+dim(H_cells)
+[1] 59543     4
+59543 + 10909 = 70452
+
+metadata$species <- posteriors[,3]
+write.csv(metadata, "metadata_alt.csv")
+
+
+
 
 
 
