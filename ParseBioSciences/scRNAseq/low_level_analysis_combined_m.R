@@ -180,7 +180,6 @@ ggplot(data.frame(colData(sce)), aes (x = factor(sample_name_m), y = as.numeric(
     labels = c("100","1,000", "5,000", "10,000", "50,000", "100,000"))
 ggsave("UMIsBySample_afterQC.pdf")
 
-
 library(BiocParallel)
 bp <- MulticoreParam(12, RNGseed=1234)
 bpstart(bp)
@@ -248,6 +247,63 @@ ggplot(df_plot[plot.index,], aes(x = UMAP1, y = UMAP2, col = factor(doublet))) +
   theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
   guides(colour = guide_legend(override.aes = list(size=7)))
 ggsave("umap_doublets.pdf")
+
+plotLayoutExpression <- function(gene="ENSMUSG00000027168.22"){
+  require(Matrix)
+  require(ggplot2)
+    logcounts <- counts(sce_filt)[rownames(sce_filt) == gene,]
+    if (sum(logcounts)>0){
+        df_tmp    <- data.frame(cbind(df_plot, logcounts))
+        plot.index  <- order(df_tmp$logcounts)
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = logcounts)) +
+          geom_point(size = 1) +
+          scale_color_gradient(low='gray', high='darkgreen') +
+          labs(color = paste0(gene,'\nlog(counts)')) +
+          theme_minimal() +
+          theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+          theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+          xlab('Dimension 1') + ylab('Dimension 2')
+    }else{
+    message(gene,' was not detected in the expression matrix')
+    }
+}
+
+#Pax6 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000027168")
+ggsave("Pax6_UMAP.pdf")
+
+#Emx2 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000043969")
+ggsave("Emx2_UMAP.pdf")
+
+#Dlg4(PSD95) maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000020886")
+ggsave("Dlg4_UMAP.pdf")
+
+#Neurog2 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000027967")
+ggsave("Neurog2_UMAP.pdf")
+
+#Sox2 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000074637")
+ggsave("Sox2_UMAP.pdf")
+
+#Otx2 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000021848")
+ggsave("Otx2_UMAP.pdf")
+
+#Sox9 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000000567")
+ggsave("Sox9_UMAP.pdf")
+
+#Ngn2 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000021848")
+ggsave("Ngn2_UMAP.pdf")
+
+#Tbr1 maping on UMAP
+plotLayoutExpression(gene="ENSMUSG00000035033")
+ggsave("Tbr1_UMAP.pdf")
+
 
 colData(sce) <- DataFrame(df_plot)
 
