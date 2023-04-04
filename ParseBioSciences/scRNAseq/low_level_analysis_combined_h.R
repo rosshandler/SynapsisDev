@@ -23,17 +23,17 @@ lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
 genes_human <- genes[genes$genome == "hg38",]
-dim(counts)
-[1]   62704 2214461
-dim(counts[,ngenes > 400 & lib.sizes > 500])
-[1] 62704 56066
+#dim(counts)
+#[1] 62704 2214461
+#dim(counts[,ngenes > 400 & lib.sizes > 500])
+#[1] 62704 56066
 
 counts   <- counts[,ngenes > 400 & lib.sizes > 500]
 metadata <- metadata[ngenes > 400 & lib.sizes > 500,]
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
-hist(ngenes/lib.sizes)
+#hist(ngenes/lib.sizes)
 
 counts   <- counts[,ngenes/lib.sizes < 0.9]
 metadata <- metadata[ngenes/lib.sizes < 0.9,]
@@ -70,7 +70,7 @@ submeta$day <- gsub("d","",submeta$day)
 
 metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name, submeta))
 plot_df <- metadata
-setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC_h')
+setwd('/data2/hanna/synaptogenesis/newvolume/analysis/QC_H')
 
 ggplot(plot_df, aes (x = factor(sample_name), y = as.numeric(lib.sizes))) +
   geom_boxplot() +
@@ -96,36 +96,37 @@ gene_map  <- getBM(attributes=c("ensembl_gene_id", "hgnc_symbol", "chromosome_na
   
 mt.index    <- gene_map$chromosome_name == "MT"
 mt.counts   <- counts[which(genes$gene_name %in% gene_map$hgnc_symbol[mt.index]), ]
-mt.fraction <- colSums(mt.counts/lib.sizes)
+mt.count <- colSums(mt.counts) 
+mt.fraction <- mt.count/lib.sizes
 dim(mt.counts)
 [1]    37 56018
 
 mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
 mt.lim
-[1] 0.05610907
+[1] 0.03610108
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
 mt.lim
-[1] 0.07825714
+[1] 0.04558969
 
 metadata <- data.frame(cbind(metadata,mt.fraction))
 
 pdf("Mtreadfraction.pdf")
-plot <- qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
+qplot(lib.sizes, mt.fraction, col = ifelse(mt.fraction>mt.lim, "drop", "keep")) +
   scale_x_log10() +
   labs(x = "UMI count", y = "MT read fraction") +
   theme_minimal() + 
   theme(text = element_text(size=20),legend.position = "none")  +
   scale_color_manual(values = c("drop" = "grey50", "keep" = "black"), name = "")
 dev.off()
-print(plot)
+
 
 dim(counts[,mt.fraction < mt.lim])
-[1] 62704 47004
+[1] 62704 54063
 dim(counts[,mt.fraction < 0.2])
-[1] 62704 51985
+[1] 62704 55964
 
-mt.lim <- 0.2
+mt.lim <- 0.2 #madeline suggested as we are trying to recover as many cells as possible
 
 sce <- SingleCellExperiment(list(counts=counts[,mt.fraction < mt.lim]),colData=DataFrame(metadata[mt.fraction < mt.lim,]))
 rownames(sce) <- genes$gene_id
@@ -139,27 +140,15 @@ colData(sce)  <- DataFrame(metadata[mt.fraction < mt.lim,])
 lib.sizes <- colSums(counts(sce))
 sce_filt  <- sce[calculateAverage(sce)>0.05,]
 
-#class: SingleCellExperiment 
-#dim: 6 47004 
-#metadata(0):
-#assays(1): counts
-#rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000000460 ENSG00000000938
-#rowData names(3): gene_id gene_name genome
-#colnames: NULL
-#colData names(20): bc_wells sample ... replicate mt.fraction
-#reducedDimNames(0):
-#mainExpName: NULL
-#altExpNames(0):
-
 #Cluster similar cells based on their expression profiles, using either log-expression values or ranks.
 clusts <- as.numeric(quickCluster(sce_filt, method = "igraph", min.size = 100))
 min.clust <- min(table(clusts))/2
 new_sizes <- c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
-sce_filtn <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
+sce_filt <- computeSumFactors(sce_filt, clusters = clusts, sizes = new_sizes, max.cluster.size = 3000)
 
 #A size factor is a scaling factor used to divide the raw counts of a particular cell to obtain normalized expression values/
 #Gets or sets the size factors for all cells in a SingleCellExperiment object.
-sizeFactors(sce) <- sizeFactors(sce_filtn)
+sizeFactors(sce) <- sizeFactors(sce_filt)
 
 pdf("sizefactors.pdf")
 ggplot(data = data.frame(X = lib.sizes, Y = sizeFactors(sce)), mapping = aes(x = X, y = Y)) +
@@ -189,20 +178,19 @@ sce <- scDblFinder(sce, samples="bc1_well", dbr=.03, dims=30, BPPARAM=bp)
 bpstop(bp)
 table(sce$scDblFinder.class)
 #singlet doublet 
-#48164    3821  
+#51839    4125  
   
 #normalisation
-sce_filtn <- sce[calculateAverage(sce)>0.05,]
-sce_filtn <- logNormCounts(sce_filtn)
+sce_filt <- sce[calculateAverage(sce)>0.05,]
+sce_filt <- logNormCounts(sce_filt)
 
-###########sce_filtn <- readRDS(paste0(path2data, "/DGE.mtx")) 
+###########sce_filt <- readRDS(paste0(path2data, "/DGE.mtx")) 
 
-decomp <- modelGeneVar(sce_filtn)
+decomp <- modelGeneVar(sce_filt)
 hvgs   <- rownames(decomp)[decomp$FDR < 0.5]
-pca    <- prcomp_irlba(t(logcounts(sce_filtn[hvgs,])), n = 30)
-rownames(pca$x) <- colnames(sce_filtn)
+pca    <- prcomp_irlba(t(logcounts(sce_filt[hvgs,])), n = 30)
+rownames(pca$x) <- colnames(sce_filt)
 tsne <- Rtsne(pca$x, pca = FALSE, check_duplicates = FALSE, num_threads=30)
-
 
 
 library(umap)
@@ -223,7 +211,7 @@ df_plot <- data.frame(
 )
 
 plot.index <- order(df_plot$doublet)
-tSNE <- ggplot(df_plot[plot.index,], aes(x = tSNE1, y = tSNE2, col = factor(doublet))) +
+ggplot(df_plot[plot.index,], aes(x = tSNE1, y = tSNE2, col = factor(doublet))) +
   geom_point(size = 0.4) +
   scale_color_manual(values=c("gray","#0169c1"), name = "") +
   labs(x = "Dim 1", y = "Dim 2") +
@@ -244,6 +232,52 @@ ggplot(df_plot[plot.index,], aes(x = UMAP1, y = UMAP2, col = factor(doublet))) +
   theme(axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
   guides(colour = guide_legend(override.aes = list(size=7)))
 ggsave("umap_doublets.pdf")
+
+
+plotLayoutExpression <- function(gene="ENSG00000181449"){
+  require(Matrix)
+  require(ggplot2)
+    logcounts <- counts(sce_filt)[rownames(sce_filt) == gene,]
+    if (sum(logcounts)>0){
+        df_tmp    <- data.frame(cbind(df_plot, logcounts))
+        plot.index  <- order(df_tmp$logcounts)
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = logcounts)) +
+          geom_point(size = 1) +
+          scale_color_gradient(low='gray', high='darkgreen') +
+          labs(color = paste0(gene,'\nlog(counts)')) +
+          theme_minimal() +
+          theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+          theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+          xlab('Dimension 1') + ylab('Dimension 2')
+    }else{
+    message(gene,' was not detected in the expression matrix')
+    }
+}
+plotLayoutExpression(gene = "ENSG00000251562")
+
+#SOX2 distribution on UMAP
+plotLayoutExpression(gene="ENSG00000181449")
+ggsave("SOX2_UMAP.pdf")
+
+#PAX6 distribution on UMAP 
+plotLayoutExpression(gene="ENSG00000007372")      
+ggsave("PAX6_UMAP.pdf")
+
+#ASCL1 distirbution on UMAP
+plotLayoutExpression(gene="ENSG00000139352")
+ggsave("ASCL1_UMAP.pdf")
+
+#NR2F1 distirbution on UMAP
+plotLayoutExpression(gene="ENSG00000175745")
+ggsave("NR2F1_UMAP.pdf")
+
+#BSN distirbution on UMAP
+plotLayoutExpression(gene="ENSG00000164061")
+ggsave("BSN_UMAP.pdf")
+
+#NES distirbution on UMAP
+plotLayoutExpression(gene="ENSG00000132688")
+ggsave("NES_UMAP.pdf")
 
 colData(sce) <- DataFrame(df_plot)
 
