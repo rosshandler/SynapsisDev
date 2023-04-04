@@ -279,6 +279,24 @@ ggsave("BSN_UMAP.pdf")
 plotLayoutExpression(gene="ENSG00000132688")
 ggsave("NES_UMAP.pdf")
 
+#SOX9 distribution on UMAP
+plotLayoutExpression(gene="ENSG00000125398")
+ggsave("SOX9_UMAP.pdf")
+
+#NEUROG2 distribution on UMAP
+plotLayoutExpression(gene="ENSG00000178403")
+ggsave("NEUROG2_UMAP.pdf")
+
+#OTX2 distribution on UMAP
+plotLayoutExpression(gene="ENSG00000165588")
+ggsave("OTX2_UMAP.pdf")
+
+#DLG4 distribution on UMAP
+plotLayoutExpression(gene="ENSG00000132535")
+ggsave("DLG4_UMAP.pdf")
+
+
+
 colData(sce) <- DataFrame(df_plot)
 
 saveRDS(sce,paste0(path2data,"sce.rds"))
