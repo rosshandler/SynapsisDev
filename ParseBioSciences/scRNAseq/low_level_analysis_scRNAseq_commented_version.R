@@ -15,7 +15,7 @@ use_condaenv(condaenv="scanpy-p3.9")
 
 umap = import('umap')
 
-path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_h/all-well/DGE_unfiltered'
+path2data   <- '/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sCell/all-well/DGE_unfiltered/'
 sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
 
@@ -132,16 +132,6 @@ dev.off()
 print(ggp)
 
 
-
-
-
-
-
-
-
-
-
-#########################################
 #connecting to BioMart datasets
 ensembl_human <- useEnsembl(biomart = "ensembl",  dataset = "hsapiens_gene_ensembl",mirror = "useast")
 ensembl_mouse <- useEnsembl(biomart = "ensembl",  dataset = "mmusculus_gene_ensembl",mirror = "useast")
