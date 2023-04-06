@@ -97,15 +97,15 @@ mt.counts   <- counts[which(genes$gene_name %in% gene_map$mgi_symbol[mt.index]),
 mt.count    <- colSums(mt.counts)
 mt.fraction <- mt.count/lib.sizes
 
-dim(mt.counts)
+#dim(mt.counts)
 #37 25251
-length(mt.count)
+#length(mt.count)
 #25251
-length(mt.fraction)
+#length(mt.fraction)
 #25251
-min(mt.fraction)
+#min(mt.fraction)
 # 0
-max(mt.fraction)
+#max(mt.fraction)
 # 0.6363441
 
 #after colSums(mt.counts/lib.sizes) and before divding by mt.count
@@ -115,11 +115,10 @@ max(mt.fraction)
 #55.66854
 
 
-
-mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
-mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
-mt.lim
-[1] 0.04253697
+#mt.p   <- pnorm(mt.fraction, mean = median(mt.fraction), sd = mad(mt.fraction), lower.tail = FALSE)
+#mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.05)])
+#mt.lim
+#[1] 0.04253697
 mt.lim <- min(mt.fraction[which(p.adjust(mt.p, method = "fdr") < 0.001)])
 mt.lim
 [1] 0.0531401
@@ -248,6 +247,7 @@ ggplot(df_plot[plot.index,], aes(x = UMAP1, y = UMAP2, col = factor(doublet))) +
   guides(colour = guide_legend(override.aes = list(size=7)))
 ggsave("umap_doublets.pdf")
 
+#plotting gene expression levels in cells on UMAPs
 plotLayoutExpression <- function(gene="ENSMUSG00000027168.22"){
   require(Matrix)
   require(ggplot2)
@@ -303,6 +303,89 @@ ggsave("Ngn2_UMAP.pdf")
 #Tbr1 maping on UMAP
 plotLayoutExpression(gene="ENSMUSG00000035033")
 ggsave("Tbr1_UMAP.pdf")
+
+##############################
+
+#Piccolo distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000061601")
+ggsave("Piccolo_UMAP.pdf")
+
+#SYN1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000037217")
+ggsave("SYN1_UMAP.pdf")
+
+#SYN2 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000009394")
+ggsave("SYN2_UMAP.pdf")
+
+#SYN3 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000059602")
+ggsave("SYN3_UMAP.pdf")
+
+
+#VAMP1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000030337")
+ggsave("VAMP1_UMAP.pdf")
+
+#Syt1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000035864")
+ggsave("Syt1__UMAP.pdf")
+
+#NRX1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUST00000192074")
+ggsave("NRX1_UMAP.pdf")
+
+#NRX3 distribution on UMAP
+plotLayoutExpression(gene="ENSG00000021645")
+ggsave("NRX3_UMAP.pdf")
+
+#Grin3a distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000039579")
+ggsave("Grin3a_UMAP.pdf")
+
+#GRIA1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000020524")
+ggsave("GRIA1_UMAP.pdf")
+
+#GRIA3 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000001986")
+ggsave("GRIA3_UMAP.pdf")
+
+#SHANK1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000038738")
+ggsave("SHANK1_UMAP.pdf")
+
+#DLG4 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000020886")
+ggsave("DLG4_UMAP.pdf")
+
+#HOMER1 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000007617 ")
+ggsave("HOMER1_UMAP.pdf")
+
+#CAMK2A distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000024617")
+ggsave("CAMK2A_UMAP.pdf")
+
+#CAMK2B distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000057897")
+ggsave("CAMK2B_UMAP.pdf")
+
+#CAMK2G distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000021820")
+ggsave("CAMK2G_UMAP.pdf")
+
+#GRM7 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000056755")
+ggsave("GRM7_UMAP.pdf")
+
+#GRM3 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000003974")
+ggsave("GRM3_UMAP.pdf")
+
+#GRM5 distribution on UMAP
+plotLayoutExpression(gene="ENSMUSG00000049583")
+ggsave("GRM5_UMAP.pdf")
 
 
 colData(sce) <- DataFrame(df_plot)
