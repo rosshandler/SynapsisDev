@@ -24,6 +24,7 @@ counts    <- t(readMM(paste0(path2data, "DGE.mtx")))
 genes     <- read.csv(paste0(path2data, "all_genes.csv"))
 metadata  <- read.csv(paste0(path2data, "cell_metadata.csv"))
 
+#lib.size - total number of reads that were mapped per cell
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
