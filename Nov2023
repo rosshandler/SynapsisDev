@@ -17,16 +17,111 @@ path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_h/all-we
 sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
   sep = "\t", header = TRUE)
 
-#read the spare matrix into counts
-#read the geneIDs, names and genome-of-origine into genes 
 counts    <- t(readMM(paste0(path2data, "/DGE.mtx")))
 genes     <- read.csv(paste0(path2data, "/all_genes.csv"))
 metadata  <- read.csv(paste0(path2data, "/cell_metadata.csv"))
+rownames(counts) <- genes
 
 lib.sizes <- colSums(counts)
 ngenes    <- colSums(counts > 0)
 
 
+counts   <- counts[,ngenes > 400 & lib.sizes > 500]
+metadata <- metadata[ngenes > 400 & lib.sizes > 500,]
+lib.sizes <- colSums(counts)
+ngenes    <- colSums(counts > 0)
+
+#hist(ngenes/lib.sizes)
+
+counts   <- counts[,ngenes/lib.sizes < 0.9]
+metadata <- metadata[ngenes/lib.sizes < 0.9,]
+lib.sizes <- colSums(counts)
+ngenes    <- colSums(counts > 0)
+
+sample_bc1_well <- rep(NA, nrow(metadata))        
+sample_number   <- rep(NA, nrow(metadata))
+sample_name    <- rep(NA, nrow(metadata))
+
+#editing sample info
+sample_info$H_day <- sample_info$H_Timepoint 
+sample_info$H_day <- gsub("55\\+","",sample_info$H_day)
+sample_info$H_day <- as.integer(sample_info$H_day)
+sample_info$H_day <-  sample_info$H_day +55
+sample_info$Sample_name_H <- paste(sample_info$H_Batch, sample_info$H_day, sample_info$H_Replicate, sep="_")
+
+sample_info$M_day <- sample_info$M_Timepoint
+sample_info$M_day <- gsub("8\\+","",sample_info$M_day)
+sample_info$M_day <- as.integer(sample_info$M_day)
+sample_info$M_day <-  sample_info$M_day +8
+sample_info$Sample_name_M <- paste(sample_info$M_Batch, sample_info$M_day, sample_info$M_Replicate, sep="_")
+
+samples <- unique(sample_info$Sample_well)
+for (i in 1:length(samples)){
+  sample_bc1_well[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))] <- sample_info$Sample_well[i]
+  sample_number[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]   <- sample_info$Sample_Number[i]
+  sample_name[metadata$bc1_well %in% unlist(strsplit(samples[i],split=","))]     <- sample_info$Sample_name_H[i]
+}
+
+submeta <- data.frame(rlist::list.rbind(strsplit(sample_name, split="_")))
+colnames(submeta) <- c("batch", "day", "replicate")
+submeta$day <- gsub("d","",submeta$day)
+
+metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well, sample_name, submeta))
+
+#finding the mapping rates
+metadata$rate_h <- metadata$hg38_tscp_count/metadata$tscp_count
+metadata$rate_m <- metadata$mm10_tscp_count/metadata$tscp_count
+
+#rate_h >< rate_m method 
+metadata$cell_specie <- rep(NA, nrow(metadata))
+for (i in 1:nrow(metadata)){
+  if (metadata$rate_h[i] > metadata$rate_m[i]){
+    metadata$cell_species[i] <- "h"}
+  else {metadata$cell_species[i] <- "m"
+  }
+}
+
+#cutoff#1 0.75 percent for both
+metadata2 <- metadata 
+metadata2$cell_specie <- rep(NA, nrow(metadata2))
+for (i in 1:nrow(metadata2)){
+  if (metadata2$rate_h[i] > 0.75){
+    metadata2$cell_species[i] <- "h"}
+  if else (metadata2$rate_m[i] > 0.75) {
+    metadat2a$cell_species[i] <- "m"
+  } else {
+    metadata2$cell_species[i] <- "0"
+  }
+}
+
+subset_h2 <- metadata2[metadata2$cell_specie == "h",]
+subset_m2 <- metadata2[metadata2$cell_specie == "m",]
+
+print(paste('Number of huamn cells for cuttoff 0.75: ', nrow(subset_h2)))
+print(paste('Number of mouse cells for cuttoff 0.75: ', nrow(subset_m2)))
+print(paste('Cells lost: ', (ncol(counts) - (nrow(subset_h2) + nrow(subset_m2)))))
+print(paste('Total number of cells: ', ((nrow(subset_h2) + nrow(subset_m2)))))
+[1] "Number of huamn cells for cuttoff 0.75:  53480"
+[1] "Number of mouse cells for cuttoff 0.75:  15068"
+[1] "Cells lost:  1904"
+[1] "Total number of cells:  68548"
+
+#cutoff#2 0.6 for both 
+
+metadata3 <- metadata 
+metadata3$cell_specie <- rep(NA, nrow(metadata3))
+for (i in 1:nrow(metadata3)){
+  if (metadata3$rate_h[i] > 0.6){
+    metadata3$cell_species[i] <- "h"}
+  if else (metadata3$rate_m[i] > 0.6) {
+    metadata3$cell_species[i] <- "m"
+  } else {
+    metadata3$cell_species[i] <- "0"
+  }
+}
+
+subset_h3 <- metadata3[metadata3$cell_specie == "h",]
+subset_m3 <- metadata3[metadata3$cell_specie == "m",]
 
 print(paste('Number of huamn cells for cuttoff 0.6: ', nrow(subset_h3)))
 print(paste('Number of mouse cells for cuttoff 0.6: ', nrow(subset_m3)))
@@ -35,6 +130,31 @@ print(paste('Total number of cells: ', ((nrow(subset_h2) + nrow(subset_m3)))))
 [1] "Number of huamn cells for cuttoff 0.6:  53772"
 [1] "Number of mouse cells for cuttoff 0.6:  15969"
 [1] "Cells lost:  711"
+[1] "Total number of cells:  69449"
+
+#cutoff#3 0.75 for human and 0.6 for mouse
+metadata5 <- metadata 
+metadata5$cell_specie <- rep(NA, nrow(metadata5))
+for (i in 1:nrow(metadata5)){
+  if (metadata5$rate_h[i] > 0.75){
+    metadata5$cell_species[i] <- "h"}
+  if else (metadata3$rate_m[i] > 0.6) {
+    metadata5$cell_species[i] <- "m"
+  } else {
+    metadata5$cell_species[i] <- "0"
+  }
+}
+
+subset_h5 <- metadata2[metadata5$cell_specie == "h",]
+subset_m5 <- metadata2[metadata5$cell_specie == "m",]
+
+print(paste('Number of huamn cells for cuttoff 0.75: ', nrow(subset_h5)))
+print(paste('Number of mouse cells for cuttoff 0.6: ', nrow(subset_m5)))
+print(paste('Cells lost: ', (ncol(counts) - (nrow(subset_h5) + nrow(subset_m5)))))
+print(paste('Total number of cells: ', ((nrow(subset_h5) + nrow(subset_m5)))))
+[1] "Number of huamn cells for cuttoff 0.75:  53480"
+[1] "Number of mouse cells for cuttoff 0.6:  15969"
+[1] "Cells lost:  1003"
 [1] "Total number of cells:  69449"
 
 
