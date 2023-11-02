@@ -1,0 +1,41 @@
+cd /data2/hanna/synaptogenesis/newvolume
+singularity shell --bind /data2:/mnt qc-cell.sif
+cd /mnt/hanna/synaptogenesis/newvolume/analysis/Nov2023
+
+library(scuttle)
+library(scran)
+library(irlba)
+library(Rtsne)
+library(Matrix)
+library(ggplot2)
+library(biomaRt)
+library(viridisLite)
+library(viridis)
+library(scDblFinder)
+
+path2data   <- '/data2/hanna/synaptogenesis/newvolume/analysis/combined_h/all-well/DGE_unfiltered'
+sample_info <- read.table('/data2/ivanir/Feline2023/ParseBS/newvolume/analysis/sample_info.tab',
+  sep = "\t", header = TRUE)
+
+#read the spare matrix into counts
+#read the geneIDs, names and genome-of-origine into genes 
+counts    <- t(readMM(paste0(path2data, "/DGE.mtx")))
+genes     <- read.csv(paste0(path2data, "/all_genes.csv"))
+metadata  <- read.csv(paste0(path2data, "/cell_metadata.csv"))
+
+lib.sizes <- colSums(counts)
+ngenes    <- colSums(counts > 0)
+
+
+
+print(paste('Number of huamn cells for cuttoff 0.6: ', nrow(subset_h3)))
+print(paste('Number of mouse cells for cuttoff 0.6: ', nrow(subset_m3)))
+print(paste('Cells lost: ', (ncol(counts) - (nrow(subset_h3) + nrow(subset_m3)))))
+print(paste('Total number of cells: ', ((nrow(subset_h2) + nrow(subset_m3)))))
+[1] "Number of huamn cells for cuttoff 0.6:  53772"
+[1] "Number of mouse cells for cuttoff 0.6:  15969"
+[1] "Cells lost:  711"
+[1] "Total number of cells:  69449"
+
+
+
