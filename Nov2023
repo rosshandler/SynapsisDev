@@ -72,6 +72,15 @@ metadata <- data.frame(cbind(metadata, lib.sizes, sample_number, sample_bc1_well
 metadata$rate_h <- metadata$hg38_tscp_count/metadata$tscp_count
 metadata$rate_m <- metadata$mm10_tscp_count/metadata$tscp_count
 
+#PLOTTING MAPPIGN RATE TO DECIDE ON THE TRESHOLDS 
+pdf("human_tscp_mapping_rate")
+ggplot(metadata, aes(x=rate_h)) + geom_histogram(color="blue", fill= "blue", bins=30)
+dev.off()
+
+pdf("mouse_tscp_mapping_rate")
+ggplot(metadata, aes(x=rate_m)) + geom_histogram(color="orange", fill= "orange", bins=30)
+dev.off()
+
 #rate_h >< rate_m method 
 metadata$cell_specie <- rep(NA, nrow(metadata))
 for (i in 1:nrow(metadata)){
@@ -156,6 +165,9 @@ print(paste('Total number of cells: ', ((nrow(subset_h5) + nrow(subset_m5)))))
 [1] "Number of mouse cells for cuttoff 0.6:  15969"
 [1] "Cells lost:  1003"
 [1] "Total number of cells:  69449"
+
+
+
 
 
 
