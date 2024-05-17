@@ -12,6 +12,18 @@ gexp_decont <- logcounts(sce, assay.type = "decontXcounts")
 rownames(gexp) <- rowData(sce)$gene_name
 rownames(gexp_decont) <- rowData(sce)$gene_name
 
+sce_filt <- sce_a[calculateAverage(sce_a)>0.1,]
+sce_filt <- logNormCounts(sce_filt,assay.type = "decontXcounts")
+
+decomp  <- modelGeneVar(sce_filt)
+hvgs    <- rownames(decomp)[decomp$FDR < 0.1]
+pca      <- irlba::prcomp_irlba(t(logcounts(gexp_decont[hvgs,])), n = 30)
+graph <- buildSNNGraph(pca$x, d = NA, transposed = TRUE)
+set.seed(42)
+clusters <- leiden(graph, resolution_parameter = 2)
+names(clusters) <-  colData(sce_a)$cell
+colData(sce_a)$leidenClustersdecontX <- clusters
+
 df_plot <- data.frame(colData(sce))
 
 day_colours <- rev(wesanderson::wes_palette("Zissou1", 8, type = "continuous"))
@@ -250,7 +262,7 @@ plotLayoutDoubletScore <- function(layout="UMAP"){
 plotLayoutLeiden <- function(layout="UMAP"){
   require(ggplot2)
   if (layout=="UMAP"){ 
-    ggplot(df_plot, aes(x = UMAP1, y = UMAP2, col = factor(leiden_clusters))) +
+    ggplot(df_plot, aes(x = UMAP1, y = UMAP2, col = factor(decontX_clusters))) +
       geom_point(size = 1) +        
       scale_color_manual(values=leiden_colours, name = "leiden") +
       theme_minimal() + 
@@ -259,7 +271,7 @@ plotLayoutLeiden <- function(layout="UMAP"){
       theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
       guides(colour = guide_legend(override.aes = list(size=7)))
   }else if(layout =="FA"){
-    ggplot(df_plot, aes(x = Fa1, y = Fa2, col = factor(leiden))) +
+    ggplot(df_plot, aes(x = Fa1, y = Fa2, col = factor(decontX_clusters))) +
       geom_point(size = 1) +
       scale_color_manual(values=leiden_colours, name = "leiden_clusters") +
       theme_minimal() + 
