@@ -28,7 +28,7 @@ rownames(gexp_decont) <- rowData(sce)$gene_name
 
 df_plot <- data.frame(colData(sce))
 
-day_colours <- rev(wesanderson::wes_palette("Zissou1", 8, type = "continuous"))
+day_colours <- rev(wesanderson::wes_palette("Zissou1", 13, type = "continuous"))
 days <- sort(as.numeric(unique(df_plot$day_H)))
 
 level_order <- days
@@ -208,10 +208,10 @@ plotLayoutMTfraction <- function(layout="UMAP"){
   require(Matrix)
   require(ggplot2)
     mt.fraction <- df_plot$mt.fraction
-      if (layout=="FA"){ 
+      if (layout=="UMAP"){ 
         df_tmp      <- data.frame(cbind(df_plot, mt.fraction))
         plot.index  <- order(df_tmp$mt.fraction)
-        ggplot(df_tmp[plot.index,], aes(x = Fa1, y = Fa2, colour = mt.fraction)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = mt.fraction)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="red") +
           labs(color = "MT fraction") +
@@ -219,10 +219,10 @@ plotLayoutMTfraction <- function(layout="UMAP"){
           theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
           theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
           xlab("Dimension 1") + ylab("Dimension 2")
-    }else if(layout=="UMAP"){
+    }else if(layout=="UMA_decontXP"){
         df_tmp      <- data.frame(cbind(df_plot, mt.fraction))
         plot.index  <- order(df_tmp$mt.fraction)
-        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = mt.fraction)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, colour = mt.fraction)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="red") +
           labs(color = "MT fraction") +
@@ -239,10 +239,10 @@ plotLayoutContamination <- function(layout="UMAP"){
   require(Matrix)
   require(ggplot2)
     contamination <- df_plot$decontX_contamination
-      if (layout=="FA"){ 
+      if (layout=="UMAP"){ 
         df_tmp      <- data.frame(cbind(df_plot, contamination))
         plot.index  <- order(df_tmp$contamination)
-        ggplot(df_tmp[plot.index,], aes(x = Fa1, y = Fa2, colour = contamination)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = contamination)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="red") +
           labs(color = "Contamination") +
@@ -250,10 +250,10 @@ plotLayoutContamination <- function(layout="UMAP"){
           theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
           theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
           xlab("Dimension 1") + ylab("Dimension 2")
-    }else if(layout=="UMAP"){
+    }else if(layout=="UMAP_decontX"){
         df_tmp      <- data.frame(cbind(df_plot, contamination))
         plot.index  <- order(df_tmp$contamination)
-        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = contamination)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, colour = contamination)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="red") +
           labs(color = "Contamination") +
@@ -270,10 +270,10 @@ plotLayoutDoubletScore <- function(layout="UMAP"){
   require(Matrix)
   require(ggplot2)
     doublet.score <- df_plot$scDblFinder.score
-      if (layout=="FA"){ 
+      if (layout=="UMAP"){ 
         df_tmp      <- data.frame(cbind(df_plot, doublet.score))
         plot.index  <- order(df_tmp$doublet.score)
-        ggplot(df_tmp[plot.index,], aes(x = Fa1, y = Fa2, colour = doublet.score)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = doublet.score)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="black") +
           labs(color = "Doublet Score") +
@@ -281,10 +281,10 @@ plotLayoutDoubletScore <- function(layout="UMAP"){
           theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
           theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
           xlab("Dimension 1") + ylab("Dimension 2")
-    }else if(layout=="UMAP"){
+    }else if(layout=="UMAP_decontX"){
         df_tmp      <- data.frame(cbind(df_plot, doublet.score))
         plot.index  <- order(df_tmp$doublet.score)
-        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = doublet.score)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, colour = doublet.score)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="black") +
           labs(color = "Doublet Score") +
@@ -300,7 +300,7 @@ plotLayoutDoubletScore <- function(layout="UMAP"){
 plotLayoutLeiden <- function(layout="UMAP"){
   require(ggplot2)
   if (layout=="UMAP"){ 
-    ggplot(df_plot, aes(x = UMAP1, y = UMAP2, col = factor(decontX_clusters))) +
+    ggplot(df_plot, aes(x = UMAP1, y = UMAP2, col = factor(leidenclusters_before_decontX))) +
       geom_point(size = 1) +        
       scale_color_manual(values=leiden_colours, name = "leiden") +
       theme_minimal() + 
@@ -308,10 +308,10 @@ plotLayoutLeiden <- function(layout="UMAP"){
       theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
       theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
       guides(colour = guide_legend(override.aes = list(size=7)))
-  }else if(layout =="FA"){
-    ggplot(df_plot, aes(x = Fa1, y = Fa2, col = factor(decontX_clusters))) +
+  }else if(layout =="UMAP_decontX"){
+    ggplot(df_plot, aes(x = UMAP1_decontX, y = UMAP2_decontX, col = factor(leidenclusters_after_decontX))) +
       geom_point(size = 1) +
-      scale_color_manual(values=leiden_colours, name = "leiden_clusters") +
+      scale_color_manual(values=leiden_colours_decontX, name = "leiden_decontX") +
       theme_minimal() + 
       labs(col="Leiden") +
       theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
@@ -334,8 +334,8 @@ plotLayoutDay <- function(layout="UMAP"){
       theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
       theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
       guides(colour = guide_legend(override.aes = list(size=7)))
-  }else if(layout =="FA"){
-    ggplot(df_plot[plot.index,], aes(x = Fa1, y = Fa2, col = factor(day))) +
+  }else if(layout =="UMAP_decontX"){
+    ggplot(df_plot[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, col = factor(day))) +
       geom_point(size = 1) +
       scale_color_manual(values=day_colours, name = "Day") +
       theme_minimal() + 
@@ -351,16 +351,16 @@ plotLayoutDay <- function(layout="UMAP"){
 plotLayoutBatch <- function(layout="UMAP"){
   require(ggplot2)
   plot.index  <- sample(nrow(df_plot))
-  if (layout=="FA"){
-    ggplot(df_plot[plot.index,], aes(x = Fa1, y = Fa2, col = batch_H)) +
+  if (layout=="UMAP"){
+    ggplot(df_plot[plot.index,], aes(x = UMAP1, y = UMAP2, col = batch_H)) +
       geom_point(size = 1) +
       theme_minimal() +
       labs(col="Batch") +
       theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
       theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
       guides(colour = guide_legend(override.aes = list(size=7)))
-  }else if(layout =="UMAP"){
-    ggplot(df_plot[plot.index,], aes(x = UMAP1, y = UMAP2, col = batch_H)) +
+  }else if(layout =="UMAP_decontX"){
+    ggplot(df_plot[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, col = batch_H)) +
       geom_point(size = 1) +
       theme_minimal() +
       labs(col="Batch") +
@@ -372,13 +372,12 @@ plotLayoutBatch <- function(layout="UMAP"){
   }
 }
 
-
 plotViolinExpressionLeidenDecont <- function(gene="CLIC6"){
     require(Matrix)
     require(ggplot2)
     logcounts <- as.vector(as.matrix(gexp_decont[gene,]))
     if (sum(logcounts)>0){
-        leiden <- df_plot$leiden
+        leiden <- df_plot$leidenclusters_after_decontX
         ggplot(mapping =  aes(x = leiden, 
                               y = logcounts, 
                               fill = factor(leiden))) +
@@ -427,7 +426,7 @@ plotViolinExpressionLeiden <- function(gene="CLIC6"){
     require(ggplot2)
     logcounts <- as.vector(as.matrix(gexp[gene,]))
     if (sum(logcounts)>0){
-        leiden <- df_plot$leiden
+        leiden <- df_plot$leidenclusters_before_decontX
         ggplot(mapping =  aes(x = leiden, 
                               y = logcounts, 
                               fill = factor(leiden))) +
