@@ -12,6 +12,11 @@ install.packages("Matrix")
 
 # Double click on plots_feline_annotationObjectMay2024.RData
 
+# Load libraries (that you installed before)
+library(scran)
+library(Matrix)
+library(ggplot2)
+
 ## Plot gene expression in umap before and after decontamination (UMAP_decontX)
 
 # CLIC6
