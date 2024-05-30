@@ -470,4 +470,4 @@ plotViolinExpressionDay <- function(gene="CLIC6"){
     }
 }
 
-save.image(file=paste0(path2data, 'plots_feline_annotationObjectMay2024.RData'))
+save.image(file=paste0("/data1/ivanir/Feline2023/ParseBS/analysis/", 'plots_feline_annotationObjectMay2024.RData'))
