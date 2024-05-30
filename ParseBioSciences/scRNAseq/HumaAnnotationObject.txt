@@ -1,0 +1,70 @@
+## Install three libraries (you will do this only once)
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("scran")
+
+install.packages("ggplot2")
+
+install.packages("Matrix")
+
+## Then you have to open the object I sent which has the data and some functions for plotting included 
+
+# Double click on plots_feline_annotationObjectMay2024.RData
+
+## Plot gene expression in umap before and after decontamination (UMAP_decontX)
+
+# CLIC6
+plotLayoutExpression(gene="CLIC6", layout="UMAP")
+
+plotLayoutExpression(gene="CLIC6", layout="UMAP_decontX")
+
+# SOX2
+plotLayoutExpression(gene="SOX2", layout="UMAP")
+
+plotLayoutExpression(gene="SOX2", layout="UMAP_decontX")
+
+
+## Now plot decontaminated gene expression in the same two umaps, it should be pretty similar
+
+# CLIC6
+plotLayoutExpressionDecont(gene="CLIC6", layout="UMAP")
+
+plotLayoutExpressionDecont(gene="CLIC6", layout="UMAP_decontX")
+
+# SOX2
+plotLayoutExpressionDecont(gene="SOX2", layout="UMAP")
+
+plotLayoutExpressionDecont(gene="SOX2", layout="UMAP_decontX")
+
+## Plot mithocondrial fraction
+
+plotLayoutMTfraction(layout="UMAP")
+plotLayoutMTfraction(layout="UMAP_decontX")
+
+## Plot contamination estimate (you can use UMAP_decontX in every plot, just as above)
+plotLayoutContamination(layout="UMAP")
+
+## Plot doublet score estimate
+plotLayoutDoubletScore(layout="UMAP")
+
+## When plotting leiden clusters the clustering is in agreement with the layout, before and after contamination
+plotLayoutLeiden(layout="UMAP")
+plotLayoutLeiden(layout="UMAP_decontX")
+
+# Now plot day (time)
+plotLayoutDay(layout="UMAP")
+plotLayoutDay(layout="UMAP_decontX")
+
+# or by batch
+plotLayoutBatch(layout="UMAP")
+
+# you can also split the umap by day
+plotLayoutDay(layout="UMAP_decontX") + facet_wrap(~day)
+
+## You can make violin plots by cluster or by day on both, default and decontaminated.
+plotViolinExpressionDay(gene="CLIC6")
+plotViolinExpressionLeiden(gene="CLIC6")
+
+plotViolinExpressionDayDecont(gene="CLIC6")
+plotViolinExpressionLeidenDecont(gene="CLIC6")
