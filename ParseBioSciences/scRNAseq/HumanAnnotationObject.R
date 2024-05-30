@@ -2,27 +2,29 @@ library(scran)
 library(Matrix)
 library(ggplot2)
 
-path2data <- "/data2/hanna/synaptogenesis/newvolume/analysis/Jan2024/25-3-24/"
+path2data <- "/data2/hanna/axonoutgrowth/analysis/DimRed/"
 
-sce  <- readRDS(paste0(path2data, "sce.delta_h_t_26-3-24.rds"))
-sce  <- logNormCounts(sce, exprs_values = "decontXcounts", name = "decontXlogcounts")
+sce  <- readRDS(paste0(path2data, "sce_decontXDimRed.rds"))
+
+sce  <- logNormCounts(sce, assay.type = "decontXcounts", name = "decontXlogcounts")
+gexp_decont <- logcounts(sce)
+sce  <- logNormCounts(sce, assay.type = "counts", name = "logcounts")
 gexp <- logcounts(sce)
-gexp_decont <- logcounts(sce, assay.type = "decontXcounts")
 
 rownames(gexp) <- rowData(sce)$gene_name
 rownames(gexp_decont) <- rowData(sce)$gene_name
 
-sce_filt <- sce_a[calculateAverage(sce_a)>0.1,]
-sce_filt <- logNormCounts(sce_filt,assay.type = "decontXcounts")
+#sce_filt <- sce_a[calculateAverage(sce_a)>0.1,]
+#sce_filt <- logNormCounts(sce_filt,assay.type = "decontXcounts")
 
-decomp  <- modelGeneVar(sce_filt)
-hvgs    <- rownames(decomp)[decomp$FDR < 0.1]
-pca      <- irlba::prcomp_irlba(t(logcounts(gexp_decont[hvgs,])), n = 30)
-graph <- buildSNNGraph(pca$x, d = NA, transposed = TRUE)
-set.seed(42)
-clusters <- leiden(graph, resolution_parameter = 2)
-names(clusters) <-  colData(sce_a)$cell
-colData(sce_a)$leidenClustersdecontX <- clusters
+#decomp  <- modelGeneVar(sce_filt)
+#hvgs    <- rownames(decomp)[decomp$FDR < 0.1]
+#pca      <- irlba::prcomp_irlba(t(logcounts(gexp_decont[hvgs,])), n = 30)
+#graph <- buildSNNGraph(pca$x, d = NA, transposed = TRUE)
+#set.seed(42)
+#clusters <- leiden(graph, resolution_parameter = 2)
+#names(clusters) <-  colData(sce_a)$cell
+#colData(sce_a)$leidenClustersdecontX <- clusters
 
 df_plot <- data.frame(colData(sce))
 
@@ -32,32 +34,68 @@ days <- sort(as.numeric(unique(df_plot$day_H)))
 level_order <- days
 df_plot$day <- factor(df_plot$day_H,levels=level_order)
 
-umap <- reducedDim(sce)
+umap <- reducedDim(sce,"UMAP")
 colnames(umap) <- c("UMAP1", "UMAP2")
+umap_decontX <- reducedDim(sce,"UMAP_decontXlogcounts")
+colnames(umap_decontX) <- c("UMAP1_decontX", "UMAP2_decontX")
 
-df_plot <- cbind(df_plot, umap)
+df_plot <- cbind(df_plot, umap, umap_decontX)
 
 leiden_colours <- c(
-"#655f91",
-"#4bba30",
-"#ef49c3",
-"#cdbe00",
-"#9b85ff",
-"#da8d00",
-"#3949ab",
-"#efbf61",
-"#b1007a",
-"#73d8bb",
-"#df2831",
-"#028ac3",
-"#a3190c",
-"#7eb6ff",
-"#9a6700",
-"#ff8ae4",
-"#4f6600",
-"#ff789b",
-"#8c3832",
-"#ffaa8b"
+"#7166d9",
+"#58c655",
+"#af57c6",
+"#acbb37",
+"#d149ac",
+"#5ea136",
+"#d9407f",
+"#6fc480",
+"#d83b52",
+"#4ebfa9",
+"#bf3c24",
+"#46aed7",
+"#e0752d",
+"#7293dd",
+"#d29e37",
+"#5d64ac",
+"#838c26",
+"#c88ed9",
+"#3c9153",
+"#964d88",
+"#53772f",
+"#de80ad",
+"#337d5c",
+"#e06953",
+"#b3b269",
+"#a04456",
+"#7b702d",
+"#db7b7d",
+"#9b5e2d",
+"#db9869"
+)
+
+leiden_colours_decontX <- c(
+"#dd862f",
+"#915bc6",
+"#5ec456",
+"#d2489a",
+"#9ab635",
+"#637dc9",
+"#d3b246",
+"#ca88ca",
+"#45953f",
+"#d14558",
+"#58c39b",
+"#ce4f2e",
+"#48adcf",
+"#a78832",
+"#ac5676",
+"#5a792b",
+"#e39175",
+"#37835c",
+"#9c5d31",
+"#9fb26a",
+"#736c2c"
 )
 
 plotLayoutExpression <- function(gene="CLIC6", layout="UMAP"){
@@ -65,10 +103,10 @@ plotLayoutExpression <- function(gene="CLIC6", layout="UMAP"){
   require(ggplot2)
     logcounts <- as.vector(as.matrix(gexp[gene,]))
     if (sum(logcounts)>0){
-      if (layout=="FA"){ 
+      if (layout=="UMAP"){ 
         df_tmp      <- data.frame(cbind(df_plot, logcounts))
         plot.index  <- order(df_tmp$logcounts)
-        ggplot(df_tmp[plot.index,], aes(x = Fa1, y = Fa2, colour = logcounts)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = logcounts)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="darkgreen") +
           labs(color = paste0(gene,"\nlog(counts)")) +
@@ -76,10 +114,10 @@ plotLayoutExpression <- function(gene="CLIC6", layout="UMAP"){
           theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
           theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
           xlab("Dimension 1") + ylab("Dimension 2")
-    }else if(layout=="UMAP"){
+    }else if(layout=="UMAP_decontX"){
         df_tmp      <- data.frame(cbind(df_plot, logcounts))
         plot.index  <- order(df_tmp$logcounts)
-        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = logcounts)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, colour = logcounts)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="darkgreen") +
           labs(color = paste0(gene,"\nlog(counts)")) +
@@ -100,10 +138,10 @@ plotLayoutExpressionDecont <- function(gene="CLIC6", layout="UMAP"){
   require(ggplot2)
     logcounts <- as.vector(as.matrix(gexp_decont[gene,]))
     if (sum(logcounts)>0){
-      if (layout=="FA"){ 
+      if (layout=="UMAP"){ 
         df_tmp      <- data.frame(cbind(df_plot, logcounts))
         plot.index  <- order(df_tmp$logcounts)
-        ggplot(df_tmp[plot.index,], aes(x = Fa1, y = Fa2, colour = logcounts)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = logcounts)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="darkgreen") +
           labs(color = paste0(gene,"\nlog(counts)")) +
@@ -111,10 +149,10 @@ plotLayoutExpressionDecont <- function(gene="CLIC6", layout="UMAP"){
           theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
           theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
           xlab("Dimension 1") + ylab("Dimension 2")
-    }else if(layout=="UMAP"){
+    }else if(layout=="UMAP_decontX"){
         df_tmp      <- data.frame(cbind(df_plot, logcounts))
         plot.index  <- order(df_tmp$logcounts)
-        ggplot(df_tmp[plot.index,], aes(x = UMAP1, y = UMAP2, colour = logcounts)) + 
+        ggplot(df_tmp[plot.index,], aes(x = UMAP1_decontX, y = UMAP2_decontX, colour = logcounts)) + 
           geom_point(size = 1) +
           scale_color_gradient(low="gray", high="darkgreen") +
           labs(color = paste0(gene,"\nlog(counts)")) +
