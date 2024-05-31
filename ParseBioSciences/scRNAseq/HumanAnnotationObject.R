@@ -2,9 +2,9 @@ library(scran)
 library(Matrix)
 library(ggplot2)
 
-path2data <- "/data2/hanna/axonoutgrowth/analysis/DimRed/"
+path2data <- "/mnt/hanna/axonoutgrowth/analysis/DimRed/"
 
-sce  <- readRDS(paste0(path2data, "sce_decontXDimRed.rds"))
+sce  <- readRDS(paste0(path2data, "sce_decontXDimRed_tscp_count<3500_gene_count<1500.rds"))
 
 sce  <- logNormCounts(sce, assay.type = "decontXcounts", name = "decontXlogcounts")
 gexp_decont <- logcounts(sce)
@@ -309,7 +309,7 @@ plotLayoutLeiden <- function(layout="UMAP"){
       theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
       guides(colour = guide_legend(override.aes = list(size=7)))
   }else if(layout =="UMAP_decontX"){
-    ggplot(df_plot, aes(x = UMAP1_decontX, y = UMAP2_decontX, col = factor(leidenclusters_after_decontX))) +
+    ggplot(df_plot, aes(x = UMAP1_decontX, y = UMAP2_decontX, col = factor(leidenclusters_decontXPCA_after_filter))) +
       geom_point(size = 1) +
       scale_color_manual(values=leiden_colours_decontX, name = "leiden_decontX") +
       theme_minimal() + 
@@ -377,7 +377,7 @@ plotViolinExpressionLeidenDecont <- function(gene="CLIC6"){
     require(ggplot2)
     logcounts <- as.vector(as.matrix(gexp_decont[gene,]))
     if (sum(logcounts)>0){
-        leiden <- df_plot$leidenclusters_after_decontX
+        leiden <- df_plot$leidenclusters_decontXPCA_after_filter
         ggplot(mapping =  aes(x = leiden, 
                               y = logcounts, 
                               fill = factor(leiden))) +
@@ -470,4 +470,5 @@ plotViolinExpressionDay <- function(gene="CLIC6"){
     }
 }
 
-save.image(file=paste0("/data1/ivanir/Feline2023/ParseBS/analysis/", 'plots_feline_annotationObjectMay2024.RData'))
+save.image(file=paste0("/mnt/hanna/axonoutgrowth/", 'plots_feline_annotationObjectMay2024_stringent_filter.RData'))
+
